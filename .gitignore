@@ -1,0 +1,8 @@
+*.o
+*.a
+.*.swp
+diod/diod
+utils/diodcat
+utils/diodmount
+utils/diodload
+utils/dtop

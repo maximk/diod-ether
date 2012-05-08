@@ -1,0 +1,31 @@
+.TH diodcat 8 "@META_DATE@" "@META_ALIAS@" "@META_NAME@"
+.SH NAME
+diodcat \- cat files by attaching directly to diod server
+.SH SYNOPSIS
+\fBdiodcat\fR \fI[OPTIONS] [-h host] [-a aname] [file [file...]]\fR
+.SH DESCRIPTION
+.B diodcat
+connects to a \fBdiod\fR server on \fIhost\fR, attaches to
+the mount point \fIaname\fR, and concatenates the contents of
+the specified files on stdout.
+.SH OPTIONS
+.TP
+.I "-a, --aname NAME"
+The file system name on the server (default ctl).
+.TP
+.I "-h, --hostname HOST"
+The hostname of the server (default localhost).
+.TP
+.I "-p, --port PORT"
+The port number of the server (default 564).
+.TP
+.I "-m, --msize SIZE"
+The maximum request size including 9P headers (default 65536).
+.TP
+.I "-u, --uid UID"
+Try to attach to the server as the specified user (default your effective uid).
+.TP
+.I "-t, --timeout SECS"
+Force timeout after specified number of seconds (default no timeout).
+.SH "SEE ALSO"
+diod (8)
