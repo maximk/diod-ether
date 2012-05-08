@@ -49,7 +49,8 @@ Nptrans *np_ethertrans_create(int ifindex)
 
 	struct sockaddr_ll saddr = {
 		.sll_family = AF_PACKET,
-		.sll_protocol = htons(EXP_9P_ETH),
+		//.sll_protocol = htons(EXP_9P_ETH),
+		.sll_protocol = htons(ETH_P_ALL),
 		.sll_ifindex = ifindex,
 	};
 
@@ -97,7 +98,7 @@ static int ether_trans_recv(Npfcall **fcp, u32 msize, void *a)
 	int n;
 retry:
 	n = recvfrom(et->fd, fc->pkt, msize, 0,
-			(struct sockaddr *)&et->saddr, &sa_len);
+				(struct sockaddr *)&et->saddr, &sa_len);
 	if (n < 0 && errno == EINTR)
 		goto retry;
 	if (n < 0)
@@ -105,10 +106,19 @@ retry:
 		np_uerror(errno);
 		goto error;
 	}
+
+	if (et->saddr.sll_protocol != htons(EXP_9P_ETH))
+		goto retry;
+
 	int size = np_peek_size(fc->pkt, n);
 	if (size > msize)
 	{
 		np_uerror(EPROTO);
+		goto error;
+	}
+	if (size != n -4)	// -4: csum field
+	{
+		np_uerror(EIO);
 		goto error;
 	}
 	fc->size = size;

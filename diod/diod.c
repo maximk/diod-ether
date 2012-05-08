@@ -467,7 +467,7 @@ static void *
 _service_loop_ether(void *arg)
 {
 	while (!ss.shutdown) {
-		msg("waiting on ether connection");
+		//msg("waiting on ether connection");
 		diod_ether_accept_one(ss.srv, ss.ether);
 	}
 	return NULL;
