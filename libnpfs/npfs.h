@@ -511,6 +511,7 @@ Nptrans *np_fdtrans_create(int, int);
 /* rdmatrans.c */
 struct rdma_cm_id;
 Nptrans *np_rdmatrans_create(struct rdma_cm_id *cmid, int q_depth, int msize);
+Nptrans *np_ethertrans_create(int if_index);
 
 /* error.c */
 unsigned long np_rerror(void);

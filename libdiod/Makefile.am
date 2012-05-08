@@ -18,3 +18,6 @@ libdiod_a_SOURCES = \
 if RDMATRANS
 libdiod_a_SOURCES += diod_rdma.c diod_rdma.h
 endif
+if ETHERTRANS
+libdiod_a_SOURCES += diod_ether.c diod_ether.h
+endif

@@ -36,6 +36,7 @@ build_triplet = i686-pc-linux-gnu
 host_triplet = i686-pc-linux-gnu
 target_triplet = i686-pc-linux-gnu
 #am__append_1 = diod_rdma.c diod_rdma.h
+am__append_2 = diod_ether.c diod_ether.h
 subdir = libdiod
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -44,6 +45,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ax_lua.m4 \
 	$(top_srcdir)/config/x_ac_check_cond_lib.m4 \
 	$(top_srcdir)/config/x_ac_check_pthreads.m4 \
 	$(top_srcdir)/config/x_ac_curses.m4 \
+	$(top_srcdir)/config/x_ac_ethertrans.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_meta.m4 \
 	$(top_srcdir)/config/x_ac_rdmatrans.m4 \
@@ -62,10 +64,12 @@ libdiod_a_AR = $(AR) $(ARFLAGS)
 libdiod_a_LIBADD =
 am__libdiod_a_SOURCES_DIST = diod_auth.c diod_auth.h diod_log.c \
 	diod_log.h diod_conf.c diod_conf.h diod_sock.c diod_sock.h \
-	diod_rdma.c diod_rdma.h
+	diod_rdma.c diod_rdma.h diod_ether.c diod_ether.h
 #am__objects_1 = diod_rdma.$(OBJEXT)
+am__objects_2 = diod_ether.$(OBJEXT)
 am_libdiod_a_OBJECTS = diod_auth.$(OBJEXT) diod_log.$(OBJEXT) \
-	diod_conf.$(OBJEXT) diod_sock.$(OBJEXT) $(am__objects_1)
+	diod_conf.$(OBJEXT) diod_sock.$(OBJEXT) $(am__objects_1) \
+	$(am__objects_2)
 libdiod_a_OBJECTS = $(am_libdiod_a_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/config
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -80,11 +84,11 @@ DIST_SOURCES = $(am__libdiod_a_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /home/mk/ling/diod/config/missing --run aclocal-1.11
-AMTAR = ${SHELL} /home/mk/ling/diod/config/missing --run tar
-AUTOCONF = ${SHELL} /home/mk/ling/diod/config/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/mk/ling/diod/config/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/mk/ling/diod/config/missing --run automake-1.11
+ACLOCAL = ${SHELL} /home/mk/diod/config/missing --run aclocal-1.11
+AMTAR = ${SHELL} /home/mk/diod/config/missing --run tar
+AUTOCONF = ${SHELL} /home/mk/diod/config/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/mk/diod/config/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/mk/diod/config/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -121,7 +125,7 @@ LIBTCMALLOC =
 LIBWRAP = 
 LTLIBOBJS = 
 MAINT = #
-MAKEINFO = ${SHELL} /home/mk/ling/diod/config/missing --run makeinfo
+MAKEINFO = ${SHELL} /home/mk/diod/config/missing --run makeinfo
 META_ALIAS = diod-1.0.10
 META_AUTHOR = 
 META_DATE = 2012-03-30
@@ -136,9 +140,10 @@ OBJEXT = o
 PACKAGE = diod
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = diod
-PACKAGE_STRING = diod 1.0.9
+PACKAGE_STRING = diod 1.0.10
 PACKAGE_TARNAME = diod
-PACKAGE_VERSION = 1.0.9
+PACKAGE_URL = 
+PACKAGE_VERSION = 1.0.10
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
@@ -159,10 +164,10 @@ X_PREFIX = /usr/local
 X_SBINDIR = /usr/local/sbin
 X_SHAREDSTATEDIR = /usr/local/com
 X_SYSCONFDIR = /usr/local/etc
-abs_builddir = /home/mk/ling/diod/libdiod
-abs_srcdir = /home/mk/ling/diod/libdiod
-abs_top_builddir = /home/mk/ling/diod
-abs_top_srcdir = /home/mk/ling/diod
+abs_builddir = /home/mk/diod/libdiod
+abs_srcdir = /home/mk/diod/libdiod
+abs_top_builddir = /home/mk/diod
+abs_top_srcdir = /home/mk/diod
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
@@ -189,7 +194,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/mk/ling/diod/config/install-sh
+install_sh = ${SHELL} /home/mk/diod/config/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -220,7 +225,7 @@ AM_CPPFLAGS = \
 noinst_LIBRARIES = libdiod.a
 libdiod_a_SOURCES = diod_auth.c diod_auth.h diod_log.c diod_log.h \
 	diod_conf.c diod_conf.h diod_sock.c diod_sock.h \
-	$(am__append_1)
+	$(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:
@@ -271,6 +276,7 @@ distclean-compile:
 
 include ./$(DEPDIR)/diod_auth.Po
 include ./$(DEPDIR)/diod_conf.Po
+include ./$(DEPDIR)/diod_ether.Po
 include ./$(DEPDIR)/diod_log.Po
 include ./$(DEPDIR)/diod_rdma.Po
 include ./$(DEPDIR)/diod_sock.Po

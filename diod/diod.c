@@ -60,6 +60,9 @@
 #if WITH_RDMATRANS
 #include "diod_rdma.h"
 #endif
+#if WITH_ETHERTRANS
+#include "diod_ether.h"
+#endif
 
 #include "ops.h"
 
@@ -373,6 +376,10 @@ struct svc_struct {
     diod_rdma_t rdma;
     pthread_t rdma_t;
 #endif
+#if WITH_ETHERTRANS
+	diod_ether_t *ether;
+	pthread_t ether_t;
+#endif
 };
 static struct svc_struct ss;
 
@@ -452,6 +459,18 @@ _service_loop_rdma (void *arg)
         diod_rdma_accept_one (ss.srv, ss.rdma);
     }
     return NULL;
+}
+#endif
+
+#if WITH_ETHERTRANS
+static void *
+_service_loop_ether(void *arg)
+{
+	while (!ss.shutdown) {
+		msg("waiting on ether connection");
+		diod_ether_accept_one(ss.srv, ss.ether);
+	}
+	return NULL;
 }
 #endif
 
@@ -559,6 +578,10 @@ _service_run (srvmode_t mode, int rfdno, int wfdno)
             ss.rdma = diod_rdma_create ();
             diod_rdma_listen (ss.rdma);
 #endif
+#if WITH_ETHERTRANS
+            ss.ether = diod_ether_create();
+            diod_ether_listen(ss.ether);
+#endif
             break;
     }
 
@@ -632,6 +655,10 @@ _service_run (srvmode_t mode, int rfdno, int wfdno)
     if ((n = pthread_create (&ss.rdma_t, NULL, _service_loop_rdma, NULL)))
         errn_exit (n, "pthread_create _service_loop_rdma");
 #endif
+#if WITH_ETHERTRANS
+    if ((n = pthread_create (&ss.ether_t, NULL, _service_loop_ether, NULL)))
+        errn_exit (n, "pthread_create _service_loop_ether");
+#endif
     switch (mode) {
         case SRV_FILEDES:
             np_srv_wait_conncount (ss.srv, 1);
@@ -645,6 +672,10 @@ _service_run (srvmode_t mode, int rfdno, int wfdno)
 #if WITH_RDMATRANS
     if ((n = pthread_join (ss.rdma_t, NULL)))
         errn_exit (n, "pthread_join _service_loop_rdma");
+#endif
+#if WITH_ETHERTRANS
+    if ((n = pthread_join (ss.ether_t, NULL)))
+        errn_exit (n, "pthread_join _service_loop_ether");
 #endif
 
     diod_fini (ss.srv);

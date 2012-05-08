@@ -1,5 +1,6 @@
 *.o
 *.a
+cscope.out
 .*.swp
 diod/diod
 utils/diodcat

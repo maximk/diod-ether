@@ -36,6 +36,7 @@ build_triplet = i686-pc-linux-gnu
 host_triplet = i686-pc-linux-gnu
 target_triplet = i686-pc-linux-gnu
 #am__append_1 = rdmatrans.c
+am__append_2 = ethertrans.c
 subdir = libnpfs
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in AUTHORS \
 	COPYING
@@ -45,6 +46,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ax_lua.m4 \
 	$(top_srcdir)/config/x_ac_check_cond_lib.m4 \
 	$(top_srcdir)/config/x_ac_check_pthreads.m4 \
 	$(top_srcdir)/config/x_ac_curses.m4 \
+	$(top_srcdir)/config/x_ac_ethertrans.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_meta.m4 \
 	$(top_srcdir)/config/x_ac_rdmatrans.m4 \
@@ -63,12 +65,14 @@ libnpfs_a_AR = $(AR) $(ARFLAGS)
 libnpfs_a_LIBADD =
 am__libnpfs_a_SOURCES_DIST = conn.c error.c fcall.c fdtrans.c \
 	fidpool.c fmt.c np.c srv.c trans.c user.c npstring.c npfs.h \
-	npfsimpl.h 9p.h ctl.c xpthread.h rdmatrans.c
+	npfsimpl.h 9p.h ctl.c xpthread.h rdmatrans.c ethertrans.c
 #am__objects_1 = rdmatrans.$(OBJEXT)
+am__objects_2 = ethertrans.$(OBJEXT)
 am_libnpfs_a_OBJECTS = conn.$(OBJEXT) error.$(OBJEXT) fcall.$(OBJEXT) \
 	fdtrans.$(OBJEXT) fidpool.$(OBJEXT) fmt.$(OBJEXT) np.$(OBJEXT) \
 	srv.$(OBJEXT) trans.$(OBJEXT) user.$(OBJEXT) \
-	npstring.$(OBJEXT) ctl.$(OBJEXT) $(am__objects_1)
+	npstring.$(OBJEXT) ctl.$(OBJEXT) $(am__objects_1) \
+	$(am__objects_2)
 libnpfs_a_OBJECTS = $(am_libnpfs_a_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/config
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -83,11 +87,11 @@ DIST_SOURCES = $(am__libnpfs_a_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /home/mk/ling/diod/config/missing --run aclocal-1.11
-AMTAR = ${SHELL} /home/mk/ling/diod/config/missing --run tar
-AUTOCONF = ${SHELL} /home/mk/ling/diod/config/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/mk/ling/diod/config/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/mk/ling/diod/config/missing --run automake-1.11
+ACLOCAL = ${SHELL} /home/mk/diod/config/missing --run aclocal-1.11
+AMTAR = ${SHELL} /home/mk/diod/config/missing --run tar
+AUTOCONF = ${SHELL} /home/mk/diod/config/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/mk/diod/config/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/mk/diod/config/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -124,7 +128,7 @@ LIBTCMALLOC =
 LIBWRAP = 
 LTLIBOBJS = 
 MAINT = #
-MAKEINFO = ${SHELL} /home/mk/ling/diod/config/missing --run makeinfo
+MAKEINFO = ${SHELL} /home/mk/diod/config/missing --run makeinfo
 META_ALIAS = diod-1.0.10
 META_AUTHOR = 
 META_DATE = 2012-03-30
@@ -139,9 +143,10 @@ OBJEXT = o
 PACKAGE = diod
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = diod
-PACKAGE_STRING = diod 1.0.9
+PACKAGE_STRING = diod 1.0.10
 PACKAGE_TARNAME = diod
-PACKAGE_VERSION = 1.0.9
+PACKAGE_URL = 
+PACKAGE_VERSION = 1.0.10
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
@@ -162,10 +167,10 @@ X_PREFIX = /usr/local
 X_SBINDIR = /usr/local/sbin
 X_SHAREDSTATEDIR = /usr/local/com
 X_SYSCONFDIR = /usr/local/etc
-abs_builddir = /home/mk/ling/diod/libnpfs
-abs_srcdir = /home/mk/ling/diod/libnpfs
-abs_top_builddir = /home/mk/ling/diod
-abs_top_srcdir = /home/mk/ling/diod
+abs_builddir = /home/mk/diod/libnpfs
+abs_srcdir = /home/mk/diod/libnpfs
+abs_top_builddir = /home/mk/diod
+abs_top_srcdir = /home/mk/diod
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
@@ -192,7 +197,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/mk/ling/diod/config/install-sh
+install_sh = ${SHELL} /home/mk/diod/config/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -221,7 +226,7 @@ AM_CPPFLAGS =
 noinst_LIBRARIES = libnpfs.a
 libnpfs_a_SOURCES = conn.c error.c fcall.c fdtrans.c fidpool.c fmt.c \
 	np.c srv.c trans.c user.c npstring.c npfs.h npfsimpl.h 9p.h \
-	ctl.c xpthread.h $(am__append_1)
+	ctl.c xpthread.h $(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:
@@ -273,6 +278,7 @@ distclean-compile:
 include ./$(DEPDIR)/conn.Po
 include ./$(DEPDIR)/ctl.Po
 include ./$(DEPDIR)/error.Po
+include ./$(DEPDIR)/ethertrans.Po
 include ./$(DEPDIR)/fcall.Po
 include ./$(DEPDIR)/fdtrans.Po
 include ./$(DEPDIR)/fidpool.Po

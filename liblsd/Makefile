@@ -43,6 +43,7 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ax_lua.m4 \
 	$(top_srcdir)/config/x_ac_check_cond_lib.m4 \
 	$(top_srcdir)/config/x_ac_check_pthreads.m4 \
 	$(top_srcdir)/config/x_ac_curses.m4 \
+	$(top_srcdir)/config/x_ac_ethertrans.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_meta.m4 \
 	$(top_srcdir)/config/x_ac_rdmatrans.m4 \
@@ -75,11 +76,11 @@ DIST_SOURCES = $(liblsd_a_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /home/mk/ling/diod/config/missing --run aclocal-1.11
-AMTAR = ${SHELL} /home/mk/ling/diod/config/missing --run tar
-AUTOCONF = ${SHELL} /home/mk/ling/diod/config/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/mk/ling/diod/config/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/mk/ling/diod/config/missing --run automake-1.11
+ACLOCAL = ${SHELL} /home/mk/diod/config/missing --run aclocal-1.11
+AMTAR = ${SHELL} /home/mk/diod/config/missing --run tar
+AUTOCONF = ${SHELL} /home/mk/diod/config/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/mk/diod/config/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/mk/diod/config/missing --run automake-1.11
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -116,7 +117,7 @@ LIBTCMALLOC =
 LIBWRAP = 
 LTLIBOBJS = 
 MAINT = #
-MAKEINFO = ${SHELL} /home/mk/ling/diod/config/missing --run makeinfo
+MAKEINFO = ${SHELL} /home/mk/diod/config/missing --run makeinfo
 META_ALIAS = diod-1.0.10
 META_AUTHOR = 
 META_DATE = 2012-03-30
@@ -131,9 +132,10 @@ OBJEXT = o
 PACKAGE = diod
 PACKAGE_BUGREPORT = 
 PACKAGE_NAME = diod
-PACKAGE_STRING = diod 1.0.9
+PACKAGE_STRING = diod 1.0.10
 PACKAGE_TARNAME = diod
-PACKAGE_VERSION = 1.0.9
+PACKAGE_URL = 
+PACKAGE_VERSION = 1.0.10
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
@@ -154,10 +156,10 @@ X_PREFIX = /usr/local
 X_SBINDIR = /usr/local/sbin
 X_SHAREDSTATEDIR = /usr/local/com
 X_SYSCONFDIR = /usr/local/etc
-abs_builddir = /home/mk/ling/diod/liblsd
-abs_srcdir = /home/mk/ling/diod/liblsd
-abs_top_builddir = /home/mk/ling/diod
-abs_top_srcdir = /home/mk/ling/diod
+abs_builddir = /home/mk/diod/liblsd
+abs_srcdir = /home/mk/diod/liblsd
+abs_top_builddir = /home/mk/diod
+abs_top_srcdir = /home/mk/diod
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
@@ -184,7 +186,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/mk/ling/diod/config/install-sh
+install_sh = ${SHELL} /home/mk/diod/config/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale

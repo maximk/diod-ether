@@ -66,6 +66,7 @@ AX_LUA_HEADERS
 AX_LUA_HEADERS(501)
 AX_LUA_LIBS
 X_AC_RDMATRANS
+X_AC_ETHERTRANS
 
 ##
 # For list.c, hostlist.c, hash.c

@@ -25,3 +25,6 @@ libnpfs_a_SOURCES = \
 if RDMATRANS
 libnpfs_a_SOURCES += rdmatrans.c
 endif
+if ETHERTRANS
+libnpfs_a_SOURCES += ethertrans.c
+endif

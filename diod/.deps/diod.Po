@@ -48,7 +48,7 @@ diod.o: diod.c ../config/config.h /usr/include/poll.h \
  /usr/include/sched.h /usr/include/bits/sched.h \
  /usr/include/bits/setjmp.h ../libnpfs/9p.h ../libnpfs/npfs.h \
  ../liblsd/list.h ../libdiod/diod_log.h ../libdiod/diod_conf.h \
- ../libdiod/diod_sock.h ops.h
+ ../libdiod/diod_sock.h ../libdiod/diod_ether.h ops.h
 
 ../config/config.h:
 
@@ -261,5 +261,7 @@ diod.o: diod.c ../config/config.h /usr/include/poll.h \
 ../libdiod/diod_conf.h:
 
 ../libdiod/diod_sock.h:
+
+../libdiod/diod_ether.h:
 
 ops.h:

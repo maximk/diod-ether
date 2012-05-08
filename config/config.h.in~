@@ -285,9 +285,6 @@
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
 
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
-
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
@@ -299,9 +296,6 @@
 
 /* Version number of package */
 #undef VERSION
-
-/* build Xen Ethernet transport */
-#undef WITH_ETHERTRANS
 
 /* Define lsd_fatal_error */
 #undef WITH_LSD_FATAL_ERROR_FUNC
