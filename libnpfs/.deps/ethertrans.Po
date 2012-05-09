@@ -26,8 +26,9 @@ ethertrans.o: ethertrans.c /usr/include/stdlib.h /usr/include/features.h \
  /usr/include/asm-generic/types.h /usr/include/asm-generic/int-ll64.h \
  /usr/include/asm/bitsperlong.h /usr/include/asm-generic/bitsperlong.h \
  /usr/include/linux/posix_types.h /usr/include/linux/stddef.h \
- /usr/include/asm/posix_types.h /usr/include/asm/posix_types_32.h 9p.h \
- npfs.h npfsimpl.h
+ /usr/include/asm/posix_types.h /usr/include/asm/posix_types_32.h \
+ /usr/include/poll.h /usr/include/sys/poll.h /usr/include/bits/poll.h \
+ 9p.h npfs.h npfsimpl.h
 
 /usr/include/stdlib.h:
 
@@ -148,6 +149,12 @@ ethertrans.o: ethertrans.c /usr/include/stdlib.h /usr/include/features.h \
 /usr/include/asm/posix_types.h:
 
 /usr/include/asm/posix_types_32.h:
+
+/usr/include/poll.h:
+
+/usr/include/sys/poll.h:
+
+/usr/include/bits/poll.h:
 
 9p.h:
 

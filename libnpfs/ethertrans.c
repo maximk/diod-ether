@@ -21,6 +21,8 @@
 #include <netpacket/packet.h>
 #include <net/ethernet.h>
 
+#include <poll.h>
+
 #include "9p.h"
 #include "npfs.h"
 #include "npfsimpl.h"
@@ -133,15 +135,31 @@ error:
 static int ether_trans_send(Npfcall *fc, void *a)
 {
 	Ethertrans *et = a;
-	
-	int n = sendto(et->fd, fc->pkt, fc->size, 0,
-			(struct sockaddr *)&et->saddr, sizeof(et->saddr));
-	if (n < 0)
+
+	struct pollfd pfd = {
+		.fd = et->fd,
+		.events = POLLOUT,
+	};
+
+	int n = poll(&pfd, 1, 3000);
+	if (n == 0)
 	{
-		np_uerror(errno);
+		np_uerror(ETIMEDOUT);
 		return -1;
 	}
 
+	if (n < 0)
+		goto error;
+	
+	n = sendto(et->fd, fc->pkt, fc->size, 0,
+			(struct sockaddr *)&et->saddr, sizeof(et->saddr));
+	if (n < 0)
+		goto error;
+
+	return 0;
+
+error:
+	np_uerror(errno);
 	return n;
 }
 

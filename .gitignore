@@ -2,6 +2,7 @@
 *.a
 cscope.out
 .*.swp
+*.Po
 diod/diod
 utils/diodcat
 utils/diodmount
