@@ -14,6 +14,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <errno.h>
+#include <assert.h>
+#include <string.h>
 
 #include <arpa/inet.h>
 
@@ -32,7 +34,9 @@
 typedef struct Ethertrans Ethertrans;
 
 struct Ethertrans {
-	struct sockaddr_ll saddr;
+	int ifindex;
+	uint8_t mac[ETH_ALEN];
+	int mac_set;
 	int fd;
 	Nptrans *trans;
 };
@@ -44,6 +48,10 @@ static int ether_trans_send(Npfcall *fc, void *a);
 Nptrans *np_ethertrans_create(int ifindex)
 {
 	Ethertrans *et = malloc(sizeof(*et));
+
+	et->ifindex = ifindex;
+	et->mac_set = 0;
+	// et->mac is filled in after the first receive
 
 	et->fd = socket(AF_PACKET, SOCK_DGRAM, htons(ETH_P_ALL));
 	if (et->fd < 0)
@@ -91,16 +99,12 @@ static int ether_trans_recv(Npfcall **fcp, u32 msize, void *a)
 		return -1;
 	}
 
-	//
-	// et->saddr is later reused for sending. This is safe as 9P connections are
-	// initiated by clients and lladdr gets filled in properly.
-	//
-	
-	socklen_t sa_len = sizeof(et->saddr);
+	struct sockaddr_ll saddr;
+	socklen_t sa_len = sizeof(saddr);
 	int n;
 retry:
 	n = recvfrom(et->fd, fc->pkt, msize, 0,
-				(struct sockaddr *)&et->saddr, &sa_len);
+				(struct sockaddr *)&saddr, &sa_len);
 	if (n < 0 && errno == EINTR)
 		goto retry;
 	if (n < 0)
@@ -109,8 +113,20 @@ retry:
 		goto error;
 	}
 
-	if (et->saddr.sll_protocol != htons(EXP_9P_ETH))
+	if (saddr.sll_protocol != htons(EXP_9P_ETH))
 		goto retry;
+
+	//
+	// 9P requires that the first message comes from the client meaning that
+	// the MAC address will be ready when it is time to send the reply.
+	//
+
+	if (!et->mac_set)
+	{
+		assert(saddr.sll_halen == ETH_ALEN);
+		memcpy(et->mac, saddr.sll_addr, ETH_ALEN);
+		et->mac_set = 1;
+	}
 
 	int size = np_peek_size(fc->pkt, n);
 	if (size > msize)
@@ -125,6 +141,7 @@ retry:
 	}
 	fc->size = size;
 	*fcp = fc;
+	
 	return 0;
 
 error:
@@ -151,12 +168,22 @@ static int ether_trans_send(Npfcall *fc, void *a)
 	if (n < 0)
 		goto error;
 	
+	struct sockaddr_ll saddr = {
+		.sll_family = AF_PACKET,
+		.sll_protocol = htons(EXP_9P_ETH),
+		.sll_ifindex = et->ifindex,
+		.sll_halen = ETH_ALEN,
+	};
+
+	assert(et->mac_set);
+	memcpy(saddr.sll_addr, et->mac, ETH_ALEN);
+
 	n = sendto(et->fd, fc->pkt, fc->size, 0,
-			(struct sockaddr *)&et->saddr, sizeof(et->saddr));
+			(struct sockaddr *)&saddr, sizeof(saddr));
 	if (n < 0)
 		goto error;
 
-	return 0;
+	return n;
 
 error:
 	np_uerror(errno);
