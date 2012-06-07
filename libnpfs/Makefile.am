@@ -20,6 +20,7 @@ libnpfs_a_SOURCES = \
 	npfsimpl.h \
 	9p.h \
 	ctl.c \
+	tcp.c \
 	xpthread.h
 
 if RDMATRANS

@@ -1,6 +1,6 @@
 *.o
 *.a
-cscope.out
+cscope.*
 .*.swp
 *.Po
 diod/diod

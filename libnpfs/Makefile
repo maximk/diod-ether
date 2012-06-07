@@ -65,13 +65,13 @@ libnpfs_a_AR = $(AR) $(ARFLAGS)
 libnpfs_a_LIBADD =
 am__libnpfs_a_SOURCES_DIST = conn.c error.c fcall.c fdtrans.c \
 	fidpool.c fmt.c np.c srv.c trans.c user.c npstring.c npfs.h \
-	npfsimpl.h 9p.h ctl.c xpthread.h rdmatrans.c ethertrans.c
+	npfsimpl.h 9p.h ctl.c tcp.c xpthread.h rdmatrans.c ethertrans.c
 #am__objects_1 = rdmatrans.$(OBJEXT)
 am__objects_2 = ethertrans.$(OBJEXT)
 am_libnpfs_a_OBJECTS = conn.$(OBJEXT) error.$(OBJEXT) fcall.$(OBJEXT) \
 	fdtrans.$(OBJEXT) fidpool.$(OBJEXT) fmt.$(OBJEXT) np.$(OBJEXT) \
 	srv.$(OBJEXT) trans.$(OBJEXT) user.$(OBJEXT) \
-	npstring.$(OBJEXT) ctl.$(OBJEXT) $(am__objects_1) \
+	npstring.$(OBJEXT) ctl.$(OBJEXT) tcp.$(OBJEXT) $(am__objects_1) \
 	$(am__objects_2)
 libnpfs_a_OBJECTS = $(am_libnpfs_a_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)/config
@@ -226,7 +226,7 @@ AM_CPPFLAGS =
 noinst_LIBRARIES = libnpfs.a
 libnpfs_a_SOURCES = conn.c error.c fcall.c fdtrans.c fidpool.c fmt.c \
 	np.c srv.c trans.c user.c npstring.c npfs.h npfsimpl.h 9p.h \
-	ctl.c xpthread.h $(am__append_1) $(am__append_2)
+	ctl.c tcp.c xpthread.h $(am__append_1) $(am__append_2)
 all: all-am
 
 .SUFFIXES:
@@ -277,6 +277,7 @@ distclean-compile:
 
 include ./$(DEPDIR)/conn.Po
 include ./$(DEPDIR)/ctl.Po
+include ./$(DEPDIR)/tcp.Po
 include ./$(DEPDIR)/error.Po
 include ./$(DEPDIR)/ethertrans.Po
 include ./$(DEPDIR)/fcall.Po

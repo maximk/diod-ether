@@ -43,11 +43,6 @@
 #include "xpthread.h"
 #include "npfsimpl.h"
 
-typedef struct {
-	Npfile	*file;
-	void	*data;
-} Fid;
-
 static char *_ctl_get_version (char *name, void *a);
 static char *_ctl_get_proc (char *name, void *arg);
 
@@ -92,6 +87,9 @@ void
 np_ctl_delfile (Npfile *file)
 {
 	Npfile *ff, *tmp;
+
+	if (file->flags & NP_CTL_FLAGS_TCP)
+		np_tcp_cleanup(file);
 
 	if (file) {
 		for (ff = file->child; ff != NULL; ) {
@@ -271,7 +269,12 @@ np_ctl_initialize (Npsrv *srv)
 		goto error;
 	if (!np_ctl_addfile (root, "net.rpc.nfs", _ctl_get_proc, NULL, 0))
 		goto error;
+
+	if (np_tcp_initialize(srv) < 0)
+		goto error;
+
 	return 0;
+
 error:
 	np_ctl_finalize (srv);
 	return -1;
@@ -384,6 +387,9 @@ np_ctl_lopen(Npfid *fid, u32 mode)
 	Fid *f = fid->aux;
 	Npfcall *rc = NULL;
 
+	if (f->file->flags & NP_CTL_FLAGS_TCP)
+		return np_tcp_lopen(fid, mode);
+
 	if (((mode & O_WRONLY) || (mode & O_RDWR))
 				&& !(f->file->flags & NP_CTL_FLAGS_SINK)) {
 		np_uerror (EACCES);
@@ -412,15 +418,19 @@ np_ctl_read(Npfid *fid, u64 offset, u32 count, Npreq *req)
 	Npfcall *rc = NULL;
 	int len;
 
-	if ((f->file->flags & NP_CTL_FLAGS_DELAY100MS))
-		usleep (100*1000);
-	if ((f->file->flags & NP_CTL_FLAGS_ZEROSRC)) {
-		if ((rc = np_alloc_rread (count)))
-			memset (rc->u.rread.data, 0, count);
-		else 
-			np_uerror (ENOMEM);
-		goto done;
+	if (!(f->file->flags & NP_CTL_FLAGS_TCP))
+	{
+		if ((f->file->flags & NP_CTL_FLAGS_DELAY100MS))
+			usleep (100*1000);
+		if ((f->file->flags & NP_CTL_FLAGS_ZEROSRC)) {
+			if ((rc = np_alloc_rread (count)))
+				memset (rc->u.rread.data, 0, count);
+			else 
+				np_uerror (ENOMEM);
+			goto done;
+		}
 	}
+
 	if (!f->data && f->file->getf) {
 		f->data = f->file->getf (f->file->name, f->file->getf_arg);
 		if (!f->data && np_rerror ())

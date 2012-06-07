@@ -20,6 +20,11 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+typedef struct {
+	Npfile	*file;
+	void	*data;
+} Fid;
+
 /* fcall.c */
 Npfcall *np_version(Npreq *req, Npfcall *tc);
 Npfcall *np_auth(Npreq *req, Npfcall *tc);

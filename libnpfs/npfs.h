@@ -277,6 +277,7 @@ struct Npsrv {
 	u32		msize;
 	void*		srvaux;
 	Npfile*		ctlroot;
+	Npfile*		tcproot;
 	void*		usercache;
 	void		(*logmsg)(const char *, va_list);
 	int		(*remapuser)(Npfid *fid, Npstr *, u32, Npstr *);
@@ -540,3 +541,15 @@ Npfile *np_ctl_addfile (Npfile *parent, char *name, SynGetF getf, void *arg,
 			int flags);
 Npfile *np_ctl_adddir (Npfile *parent, char *name);
 void np_ctl_delfile (Npfile *file);
+
+/* tcp.c */
+#define NP_CTL_FLAGS_TCP		0x08
+#define NP_CTL_FLAGS_TCP_MASK	0x07
+#define NP_CTL_FLAGS_TCP_CLONE	0x01
+#define NP_CTL_FLAGS_TCP_CTL	0x02
+#define NP_CTL_FLAGS_TCP_DATA	0x03
+int np_tcp_initialize(Npsrv *srv);
+Npfcall *np_tcp_lopen(Npfid *fid, u32 mode);
+void np_tcp_cleanup(Npfile *file);
+
+//EOF
