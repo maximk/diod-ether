@@ -18,24 +18,36 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #include "9p.h"
 #include "npfs.h"
 #include "xpthread.h"
 #include "npfsimpl.h"
 
+static Npfile *make_node(Npfile *parent, char *name, u8 type, np_file_vtab_t *vtab);
+static void destroy_node(Npfile *file);
+static int next_inum (void);
+
+static int tcp_clone_open(Npfid *fid, int mode);
+static void tcp_sock_cleanup(Npfile *ctlfile);
+
 np_file_vtab_t tcp_gen_vtab = { 0 };
 
-np_file_vtab_t tcp_clone_vtab = { 0 };
+np_file_vtab_t tcp_clone_vtab = {
+   .open = tcp_clone_open
+};
+
+np_file_vtab_t tcp_sock_vtab = {
+	.cleanup = tcp_sock_cleanup
+};
 
 np_file_vtab_t tcp_ctl_vtab = { 0 };
 
 np_file_vtab_t tcp_data_vtab = { 0 };
 
 np_file_vtab_t tcp_listen_vtab = { 0 };
-
-static Npfile *make_node(Npfile *parent, char *name, u8 type, np_file_vtab_t *vtab);
-static void destroy_node(Npfile *file);
-static int next_inum (void);
 
 int np_file_open(Npfile *file, Npfid *fid, int mode)
 {
@@ -162,6 +174,46 @@ static int next_inum (void)
 	ret = i++;
 	xpthread_mutex_unlock (&lock);
 	return ret;
+}
+
+//
+// Polymorphic bits
+//
+
+static int tcp_clone_open(Npfid *fid, int mode)
+{
+	Npfile *clonefile = fid->aux;
+	Npfile *tcpdir = clonefile->parent;
+
+	int sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock < 0) {
+		np_uerror(errno);
+		return -1;
+	}
+	char name[32];
+	snprintf(name, sizeof(name), "%d", sock);
+	Npfile *sockdir = make_node(tcpdir, name, P9_QTDIR, &tcp_sock_vtab);
+	if (sockdir == 0)
+		goto error1;
+	sockdir->sock = sock;
+	Npfile *ctlfile = make_node(sockdir, "ctl", P9_QTFILE, &tcp_ctl_vtab);
+	if (ctlfile == 0)
+		goto error2;
+
+	fid->aux = ctlfile;
+	return 0;
+
+error2:
+	destroy_node(sockdir);
+error1:
+	close(sock);
+	np_uerror(ENOMEM);
+	return -1;
+}
+
+static void tcp_sock_cleanup(Npfile *ctlfile)
+{
+	close(ctlfile->sock);
 }
 
 //
