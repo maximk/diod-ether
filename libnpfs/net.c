@@ -21,6 +21,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include <arpa/inet.h>
+
 #include "9p.h"
 #include "npfs.h"
 #include "xpthread.h"
@@ -31,21 +33,23 @@ static void destroy_node(Npfile *file);
 static int next_inum (void);
 
 static int tcp_ctl_read(Npfile *file, u64 offset, u8 *data, u32 count);
+static int tcp_ctl_write(Npfile *file, u64 offset, u8 *data, u32 count);
 static int tcp_clone_open(Npfid *fid, int mode);
 static void tcp_sock_cleanup(Npfile *ctlfile);
 
 np_file_vtab_t tcp_gen_vtab = { 0 };
 
 np_file_vtab_t tcp_clone_vtab = {
-   .open = tcp_clone_open
+   .open = tcp_clone_open,
 };
 
 np_file_vtab_t tcp_sock_vtab = {
-	.cleanup = tcp_sock_cleanup
+	.cleanup = tcp_sock_cleanup,
 };
 
 np_file_vtab_t tcp_ctl_vtab = {
-	.read = tcp_ctl_read
+	.read = tcp_ctl_read,
+	.write = tcp_ctl_write,
 };
 
 np_file_vtab_t tcp_data_vtab = { 0 };
@@ -66,10 +70,10 @@ int np_file_read(Npfile *file, u64 offset, u8 *data, u32 count)
 	return 0;
 }
 
-int np_file_write(Npfile *file, u8 *data, u32 count)
+int np_file_write(Npfile *file, u64 offset, u8 *data, u32 count)
 {
 	if (file->vtab->write != 0)
-		return file->vtab->write(file, data, count);
+		return file->vtab->write(file, offset, data, count);
 	return 0;
 }
 
@@ -197,6 +201,86 @@ static int tcp_ctl_read(Npfile *file, u64 offset, u8 *data, u32 count)
 	return count;
 }
 
+#define CTL_PREF_CONNECT		"connect "
+#define CTL_PREF_CONNECT_LEN	8
+#define CTL_PREF_ANNOUNCE		"announce "
+#define CTL_PREF_ANNOUNCE_LEN	9
+
+#define CTL_STATE_CREATED		0
+#define CTL_STATE_CONNECTED		1
+#define CTL_STATE_LISTENING		2
+
+static int tcp_ctl_write(Npfile *file, u64 offset, u8 *data, u32 count)
+{
+	// accept "connect ip!port" and "announce port"
+	if (offset != 0)
+		goto error2;
+
+	if (file->state != CTL_STATE_CREATED)
+		goto error1;
+
+	Npfile *tcpdir = file->parent;
+
+	if (strncmp((char *)data, CTL_PREF_CONNECT, CTL_PREF_CONNECT_LEN) == 0)
+	{
+		struct in_addr addr;
+		int port;
+
+		char pad[count -CTL_PREF_CONNECT_LEN +1];
+		memcpy(pad, data +CTL_PREF_CONNECT_LEN, count -CTL_PREF_CONNECT_LEN);
+		pad[count -CTL_PREF_CONNECT_LEN] = 0;
+
+		char *p = strchr(pad, '!');
+		if (p == 0)
+			goto error1;
+		*p++ = 0;
+
+		if (!inet_pton(AF_INET, pad, &addr))
+			goto error1;
+		port = atoi(p);
+		if (port == 0)
+			goto error1;
+
+		struct sockaddr_in sa = {
+			.sin_family = AF_INET,
+			.sin_addr = addr,
+			.sin_port = htons(port),
+		};
+
+		int n = connect(tcpdir->sock, (struct sockaddr *)&sa, sizeof(sa));
+		if (n < 0) {
+			np_uerror(errno);
+			return -1;
+		}
+
+		Npfile *datafile = make_node(tcpdir, "data", P9_QTFILE, &tcp_data_vtab);
+		if (datafile == 0) {
+			np_uerror(ENOMEM);
+			return -1;
+		}
+
+		printf("~~~ sock %d connected to %s:%d\n", tcpdir->sock, pad, port);
+		file->state = CTL_STATE_CONNECTED;
+	}
+	else if (strncmp((char *)data, CTL_PREF_ANNOUNCE, CTL_PREF_ANNOUNCE_LEN) == 0)
+	{
+		//TODO
+		goto error2;
+	}
+	else
+		goto error1;
+
+	return count;
+
+error2:
+	np_uerror(ENOTSUP);
+	return -1;
+
+error1:
+	np_uerror(EINVAL);
+	return 0;
+}
+
 static int tcp_clone_open(Npfid *fid, int mode)
 {
 	Npfile *clonefile = fid->aux;
@@ -216,7 +300,9 @@ static int tcp_clone_open(Npfid *fid, int mode)
 	Npfile *ctlfile = make_node(sockdir, "ctl", P9_QTFILE, &tcp_ctl_vtab);
 	if (ctlfile == 0)
 		goto error2;
+	ctlfile->state = CTL_STATE_CREATED;
 
+	printf("~~~ sock %d alloc\n", sock);
 	fid->aux = ctlfile;
 	return 0;
 
@@ -231,6 +317,7 @@ error1:
 static void tcp_sock_cleanup(Npfile *ctlfile)
 {
 	close(ctlfile->sock);
+	printf("~~~ sock %d closed\n", ctlfile->sock);
 }
 
 //
@@ -317,10 +404,8 @@ Npfcall *np_net_read(Npfid *fid, u64 offset, u32 count, Npreq *req)
 
 	u8 data[count];
 	int n = np_file_read(file, offset, data, count);
-	if (n < 0) {
-		np_uerror(errno);
+	if (n < 0)
 		return 0;
-	}
 	Npfcall *rc = np_create_rread(n, data);
 	if (rc == 0) {
 		np_uerror(ENOMEM);
@@ -334,12 +419,9 @@ Npfcall *np_net_write(Npfid *fid, u64 offset, u32 count, u8 *data, Npreq *req)
 {
 	Npfile *file = fid->aux;
 
-	int n = np_file_write(file, data, count);
-	if (n < 0) {
-		np_uerror(errno);
+	int n = np_file_write(file, offset, data, count);
+	if (n < 0)
 		return 0;
-	}
-	
 	Npfcall *rc = np_create_rwrite (n);
 	if (rc == 0)
 		np_uerror (ENOMEM);
