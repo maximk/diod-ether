@@ -261,7 +261,7 @@ configure:4614: $? = 0
 configure:4614: result: yes
 configure:4630: checking for poptGetArgs in default libs
 configure:4654: gcc -o conftest -g -O2   conftest.c  >&5
-/tmp/cccQLZrp.o: In function `main':
+/tmp/ccb3OzDY.o: In function `main':
 /home/mk/diod/conftest.c:52: undefined reference to `poptGetArgs'
 collect2: ld returned 1 exit status
 configure:4654: $? = 1
@@ -693,7 +693,7 @@ configure:6024: $? = 0
 configure:6032: result: yes
 configure:6046: checking for munge_ctx_create in default libs
 configure:6070: gcc -o conftest -g -O2   conftest.c  >&5
-/tmp/ccO6uczN.o: In function `main':
+/tmp/ccUNdAqP.o: In function `main':
 /home/mk/diod/conftest.c:62: undefined reference to `munge_ctx_create'
 collect2: ld returned 1 exit status
 configure:6070: $? = 1
@@ -838,7 +838,7 @@ configure: failed program was:
 configure:6117: result: no
 configure:6136: checking for cap_get_proc in default libs
 configure:6160: gcc -o conftest -g -O2   conftest.c  >&5
-/tmp/ccisBYmt.o: In function `main':
+/tmp/cc8nw05l.o: In function `main':
 /home/mk/diod/conftest.c:62: undefined reference to `cap_get_proc'
 collect2: ld returned 1 exit status
 configure:6160: $? = 1

@@ -112,35 +112,35 @@ _usercache_lookup (Npsrv *srv, char *uname, uid_t uid)
 	return u;
 }
 
-static char *
-_get_usercache (char *name, void *a)
-{
-	Npsrv *srv = (Npsrv *)a;
-	Npusercache *uc = srv->usercache;
-	Npuser *u;
-	time_t now = time (NULL);
-	char *s = NULL;
-	int len = 0;
-
-	xpthread_mutex_lock (&uc->lock);
-	_usercache_expire (srv);
-	for (u = uc->users; u != NULL; u = u->next) {
-		int ttl = uc->ttl - (now - u->t);
-
-		if (aspf (&s, &len, "%s(%d,%d+%d) %d\n", u->uname,
-			  u->uid, u->gid, u->nsg, u->uid ? ttl : 0) < 0) {
-			np_uerror (ENOMEM);
-			xpthread_mutex_unlock (&uc->lock);
-			goto error;
-		}
-	}
-	xpthread_mutex_unlock (&uc->lock);
-	return s;
-error:
-	if (s)
-		free (s);
-	return NULL;
-}
+//static char *
+//_get_usercache (char *name, void *a)
+//{
+//	Npsrv *srv = (Npsrv *)a;
+//	Npusercache *uc = srv->usercache;
+//	Npuser *u;
+//	time_t now = time (NULL);
+//	char *s = NULL;
+//	int len = 0;
+//
+//	xpthread_mutex_lock (&uc->lock);
+//	_usercache_expire (srv);
+//	for (u = uc->users; u != NULL; u = u->next) {
+//		int ttl = uc->ttl - (now - u->t);
+//
+//		if (aspf (&s, &len, "%s(%d,%d+%d) %d\n", u->uname,
+//			  u->uid, u->gid, u->nsg, u->uid ? ttl : 0) < 0) {
+//			np_uerror (ENOMEM);
+//			xpthread_mutex_unlock (&uc->lock);
+//			goto error;
+//		}
+//	}
+//	xpthread_mutex_unlock (&uc->lock);
+//	return s;
+//error:
+//	if (s)
+//		free (s);
+//	return NULL;
+//}
 
 int
 np_usercache_create (Npsrv *srv)
@@ -157,10 +157,10 @@ np_usercache_create (Npsrv *srv)
 	uc->ttl	= 60;
 	srv->usercache = uc;
 
-	if (!np_ctl_addfile (srv->ctlroot, "usercache", _get_usercache,srv,0)) {
-		free (srv->usercache);
-		return -1;
-	}
+	//if (!np_ctl_addfile (srv->ctlroot, "usercache", _get_usercache,srv,0)) {
+	//	free (srv->usercache);
+	//	return -1;
+	//}
 
 	return 0;
 }

@@ -114,17 +114,6 @@ _link_ioctx (IOCtx *head, IOCtx i)
     *head = i;
 }
 
-static void
-_count_ioctx (IOCtx i, int *shared, int *unique)
-{
-    for (*unique = *shared = 0; i != NULL; i = i->next) {
-        (*unique)++;
-        xpthread_mutex_lock (&i->lock);
-        (*shared) += i->refcount;
-        xpthread_mutex_unlock (&i->lock);
-    }
-}
-
 static IOCtx
 _ioctx_incref (IOCtx ioctx)
 {
@@ -479,32 +468,6 @@ typedef struct {
     char *s;
 } DynStr;
 
-static int
-_get_one_file (Path path, char *s, DynStr *ds)
-{
-    int unique, shared;
-
-    xpthread_mutex_lock (&path->lock);
-    _count_ioctx (path->ioctx, &shared, &unique);
-    aspf (&ds->s, &ds->len, "%d %d %d %s\n", path->refcount, shared, unique, s);
-    xpthread_mutex_unlock (&path->lock);
-    return 0;
-}
-
-static char *
-_ppool_dump (char *name, void *a)
-{
-    Npsrv *srv = a;
-    PathPool pp = srv->srvaux;
-    DynStr ds = { .s = NULL, .len = 0 };
-
-    xpthread_mutex_lock (&pp->lock);
-    hash_for_each (pp->hash, (hash_arg_f)_get_one_file, &ds);
-    xpthread_mutex_unlock (&pp->lock);
-
-    return ds.s;
-}
-
 void
 ppool_fini (Npsrv *srv)
 {
@@ -539,8 +502,8 @@ ppool_init (Npsrv *srv)
         goto error;
     }
     srv->srvaux = pp;
-    if (!np_ctl_addfile (srv->ctlroot, "files", _ppool_dump, srv, 0))
-        goto error;
+    //if (!np_ctl_addfile (srv->ctlroot, "files", _ppool_dump, srv, 0))
+    //    goto error;
     return 0;
 error:
     ppool_fini (srv);

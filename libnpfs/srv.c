@@ -47,9 +47,6 @@ static void *np_wthread_proc(void *a);
 static void np_srv_remove_workreq(Nptpool *tp, Npreq *req);
 static void np_srv_add_workreq(Nptpool *tp, Npreq *req);
 
-static char *_ctl_get_conns (char *name, void *a);
-static char *_ctl_get_tpools (char *name, void *a);
-
 /* Ugly hack so NP_ASSERT can get to registsered srv->logmsg */
 static Npsrv *np_assert_srv = NULL;
 
@@ -70,12 +67,10 @@ np_srv_create(int nwthread, int flags)
 	srv->msize = 8216;
 	srv->flags = flags;
 
-	if (np_ctl_initialize (srv) < 0)
+	srv->netroot = np_net_make_root();
+	if (srv->netroot == 0)
 		goto error;
-	if (!np_ctl_addfile (srv->ctlroot, "connections", _ctl_get_conns,srv,0))
-		goto error;
-	if (!np_ctl_addfile (srv->ctlroot, "tpools", _ctl_get_tpools, srv, 0))
-		goto error;
+
 	if (np_usercache_create (srv) < 0)
 		goto error;
 	srv->nwthread = nwthread;
@@ -96,7 +91,7 @@ np_srv_destroy(Npsrv *srv)
 	np_tpool_decref (srv->tpool);
 	np_tpool_cleanup (srv);
 	np_usercache_destroy (srv);
-	np_ctl_finalize (srv);
+	np_net_shutdown (srv->netroot);
 	np_assert_srv = NULL;
 	free (srv);
 }
@@ -899,66 +894,4 @@ np_assfail (char *ass, char *file, int line)
 		exit (1);
 }
 
-static char *
-_ctl_get_conns (char *name, void *a)
-{
-	Npsrv *srv = (Npsrv *)a;
-	Npconn *cc;
-	char *s = NULL;
-	int len = 0;
-
-	xpthread_mutex_lock(&srv->lock);
-	for (cc = srv->conns; cc != NULL; cc = cc->next) {
-		xpthread_mutex_lock(&cc->lock);
-		if (aspf (&s, &len, "%s %d\n",
-				np_conn_get_client_id(cc),
-				np_fidpool_count (cc->fidpool)) < 0) {
-			np_uerror (ENOMEM);
-			goto error_unlock;
-		}
-		xpthread_mutex_unlock(&cc->lock);
-	}
-	xpthread_mutex_unlock(&srv->lock);
-	return s;
-error_unlock:
-	xpthread_mutex_unlock(&cc->lock);
-	xpthread_mutex_unlock(&srv->lock);
-	if (s)
-		free(s);
-	return NULL;
-}
-
-static char *
-_ctl_get_tpools (char *name, void *a)
-{
-	Npsrv *srv = (Npsrv *)a;
-	Nptpool *tp;
-	Npreq *req;
-	char *s = NULL;
-	int n, len = 0;
-
-	xpthread_mutex_lock(&srv->lock);
-	for (tp = srv->tpool; tp != NULL; tp = tp->next) {
-		tp->stats.name = tp->name;
-		xpthread_mutex_lock (&tp->lock);
-		tp->stats.numfids = tp->refcount;
-		xpthread_mutex_unlock (&tp->lock);
-		tp->stats.numreqs = 0;
-		for (req = tp->reqs_first; req != NULL; req = req->next)
-			tp->stats.numreqs++;
-		for (req = tp->workreqs; req != NULL; req = req->next)
-			tp->stats.numreqs++;
-		n = np_encode_tpools_str (&s, &len, &tp->stats);
-		if (n < 0) {
-			np_uerror (ENOMEM);
-			goto error_unlock;
-		}
-	}
-	xpthread_mutex_unlock(&srv->lock);
-	return s;
-error_unlock:
-	xpthread_mutex_unlock(&srv->lock);
-	if (s)
-		free(s);
-	return NULL;
-}
+//EOF
