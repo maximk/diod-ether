@@ -171,8 +171,8 @@ diod_init (Npsrv *srv)
     //srv->renameat = diod_renameat;
     //srv->unlinkat = diod_unlinkat;
 
-    if (!np_ctl_addfile (srv->ctlroot, "exports", diod_get_exports, srv, 0))
-        goto error;
+    //if (!np_ctl_addfile (srv->ctlroot, "exports", diod_get_exports, srv, 0))
+    //    goto error;
     if (ppool_init (srv) < 0)
         goto error;
     return 0;

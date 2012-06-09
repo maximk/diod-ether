@@ -61,7 +61,7 @@ _destroy_fid (Npfid *f)
 		if (srv->auth && srv->auth->clunk)
 			(*srv->auth->clunk)(f);
 	} else if ((f->type & P9_QTTMP)) {
-		np_ctl_fiddestroy (f);
+		np_net_fiddestroy (f);
 	} else {
 		if (srv->fiddestroy)
 			(*srv->fiddestroy)(f);
@@ -147,6 +147,28 @@ np_fidpool_count(Npfidpool *pool)
 		for (f = pool->htable[i]; f != NULL; f = f->next) {
 			NP_ASSERT(f->magic == FID_MAGIC);
 			count++;
+		}
+	}
+	xpthread_mutex_unlock(&pool->lock);
+
+	return count;
+}
+
+int
+np_fidpool_clear_aux(Npfidpool *pool, void *aux)
+{
+	int i;
+	Npfid *f;
+	int count = 0;
+
+	xpthread_mutex_lock(&pool->lock);
+	for(i = 0; i < pool->size; i++) {
+		for (f = pool->htable[i]; f != NULL; f = f->next) {
+			NP_ASSERT(f->magic == FID_MAGIC);
+			if (f->aux == aux) {
+				f->aux = 0;
+				count++;
+			}
 		}
 	}
 	xpthread_mutex_unlock(&pool->lock);

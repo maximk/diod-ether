@@ -255,29 +255,39 @@ enum {
 	SRV_FLAGS_LOOSEFID	=0x00800000, /* work around buggy clients */
 };
 
-typedef char * (*SynGetF)(char *name, void *arg);
+typedef struct np_file_vtab_t np_file_vtab_t;
+struct np_file_vtab_t {
+	int (*open)(Npfid *fid, int flags);
+	int (*read)(Npfile *file, u64 offset, u8 *data, u32 count);
+	int (*write)(Npfile *file, u64 offset, u8 *data, u32 count);
+	void (*cleanup)(Npfile *file);
+};
 
 struct Npfile {
-        char                    *name;
-        Npqid                    qid;
-        SynGetF                  getf;
-        void                    *getf_arg;
-	int			flags;
+	Npfile *parent;
+	np_file_vtab_t *vtab;
+
+    char            *name;
+    Npqid           qid;
 	uid_t			uid;
 	gid_t			gid;
 	mode_t			mode;
-	struct timeval		atime;
-	struct timeval		mtime;
-	struct timeval		ctime;
-        struct Npfile		*next;
-        struct Npfile		*child;
+	struct timeval	atime;
+	struct timeval	mtime;
+	struct timeval	ctime;
+    struct Npfile	*next;
+    struct Npfile	*child;
+
+	union {
+	int sock;
+	int state;
+	};
 };
 
 struct Npsrv {
 	u32		msize;
 	void*		srvaux;
-	Npfile*		ctlroot;
-	Npfile*		tcproot;
+	Npfile*		netroot;
 	void*		usercache;
 	void		(*logmsg)(const char *, va_list);
 	int		(*remapuser)(Npfid *fid, Npstr *, u32, Npstr *);
@@ -373,6 +383,7 @@ void np_conn_set_authuser(Npconn *, u32);
 Npfidpool *np_fidpool_create(void);
 int np_fidpool_destroy(Npfidpool *pool);
 int np_fidpool_count(Npfidpool *pool);
+int np_fidpool_clear_aux(Npfidpool *pool, void *aux);
 Npfid *np_fid_find(Npconn *conn, u32 fid);
 Npfid *np_fid_create(Npconn *conn, u32 fid);
 Npfid *np_fid_create_blocking(Npconn *conn, u32 fid);
@@ -518,38 +529,22 @@ Nptrans *np_ethertrans_create(int if_index);
 unsigned long np_rerror(void);
 void np_uerror(unsigned long ecode);
 
-/* ctl.c */
-#define NP_CTL_FLAGS_DELAY100MS		0x01
-#define NP_CTL_FLAGS_ZEROSRC		0x02
-#define NP_CTL_FLAGS_SINK		0x04
-Npfcall *np_ctl_attach(Npfid *fid, Npfid *afid, char *aname);
-int np_ctl_clone(Npfid *fid, Npfid *newfid);
-int np_ctl_walk(Npfid *newfid, Npstr *wname, Npqid *wqid);
-Npfcall *np_ctl_read(Npfid *fid, u64 offset, u32 count, Npreq *req);
-Npfcall* np_ctl_write(Npfid *fid, u64 offset, u32 count, u8 *data, Npreq *req);
-Npfcall* np_ctl_clunk(Npfid *fid);
-Npfcall* np_ctl_lopen(Npfid *fid, u32 mode);
-Npfcall* np_ctl_getattr(Npfid *fid, u64 request_mask);
-Npfcall* np_ctl_setattr(Npfid *fid, u32 valid, u32 mode, u32 uid, u32 gid,
-			u64 size, u64 atime_sec, u64 atime_nsec,
-			u64 mtime_sec, u64 mtime_nsec);
-Npfcall* np_ctl_readdir(Npfid *fid, u64 offset, u32 count, Npreq *req);
-void np_ctl_fiddestroy (Npfid *fid);
-int np_ctl_initialize (Npsrv *srv);
-void np_ctl_finalize (Npsrv *srv);
-Npfile *np_ctl_addfile (Npfile *parent, char *name, SynGetF getf, void *arg,
-			int flags);
-Npfile *np_ctl_adddir (Npfile *parent, char *name);
-void np_ctl_delfile (Npfile *file);
+/* net.c */
+Npfile *np_net_make_root(void);
+void np_net_shutdown(Npfile *netroot);
 
-/* tcp.c */
-#define NP_CTL_FLAGS_TCP		0x08
-#define NP_CTL_FLAGS_TCP_MASK	0x07
-#define NP_CTL_FLAGS_TCP_CLONE	0x01
-#define NP_CTL_FLAGS_TCP_CTL	0x02
-#define NP_CTL_FLAGS_TCP_DATA	0x03
-int np_tcp_initialize(Npsrv *srv);
-Npfcall *np_tcp_lopen(Npfid *fid, u32 mode);
-void np_tcp_cleanup(Npfile *file);
+Npfcall *np_net_attach(Npfid *fid, Npfid *afid, char *aname);
+int np_net_clone(Npfid *fid, Npfid *newfid);
+int np_net_walk(Npfid *fid, Npstr *wname, Npqid *wqid);
+void np_net_fiddestroy(Npfid *fid);
+Npfcall *np_net_clunk(Npfid *fid);
+Npfcall *np_net_lopen(Npfid *fid, u32 mode);
+Npfcall *np_net_read(Npfid *fid, u64 offset, u32 count, Npreq *req);
+Npfcall *np_net_write(Npfid *fid, u64 offset, u32 count, u8 *data, Npreq *req);
+Npfcall *np_net_readdir(Npfid *fid, u64 offset, u32 count, Npreq *req);
+Npfcall *np_net_getattr(Npfid *fid, u64 valid);
+Npfcall *np_net_setattr (Npfid *fid, u32 valid, u32 mode, u32 uid, u32 gid, u64 size,
+              u64 atime_sec, u64 atime_nsec, u64 mtime_sec, u64 mtime_nsec);
+Npfcall *np_net_remove(Npfid *fid);
 
 //EOF

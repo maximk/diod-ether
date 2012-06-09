@@ -233,8 +233,8 @@ np_attach(Npreq *req, Npfcall *tc)
 			goto error;
 		}
 	}
-	if (!strcmp (fid->aname, "ctl")) {
-		rc = np_ctl_attach (fid, afid, fid->aname);
+	if (!strcmp (fid->aname, "net")) {
+		rc = np_net_attach (fid, afid, fid->aname);
 	} else {
 		if (!srv->attach) {
 			np_uerror (ENOSYS);
@@ -339,7 +339,7 @@ np_walk(Npreq *req, Npfcall *tc)
 			goto done;
 		}
 		if (fid->type & P9_QTTMP) {
-			if (!np_ctl_clone (fid, newfid))
+			if (!np_net_clone (fid, newfid))
 				goto done;
 		} else {
 			if (!conn->srv->clone) {
@@ -368,7 +368,7 @@ np_walk(Npreq *req, Npfcall *tc)
 	}
 	for(i = 0; i < tc->u.twalk.nwname;) {
 		if (newfid->type & P9_QTTMP) {
-			if (!np_ctl_walk (newfid, &tc->u.twalk.wnames[i],
+			if (!np_net_walk (newfid, &tc->u.twalk.wnames[i],
 					  &wqids[i]))
 				break;
 		} else {
@@ -440,7 +440,7 @@ np_read(Npreq *req, Npfcall *tc)
 		goto done;
 	}
 	if (fid->type & P9_QTTMP) {
-		rc = np_ctl_read(fid, tc->u.tread.offset,
+		rc = np_net_read(fid, tc->u.tread.offset,
 				 tc->u.tread.count, req);
 	} else {
 		if (np_setfsid (req, fid->user, -1) < 0)
@@ -495,7 +495,7 @@ np_write(Npreq *req, Npfcall *tc)
 	}
 
 	if (fid->type & P9_QTTMP) {
-		rc = np_ctl_write(fid, tc->u.twrite.offset,
+		rc = np_net_write(fid, tc->u.twrite.offset,
 				  tc->u.twrite.count,
 				  tc->u.twrite.data, req);
 	} else {
@@ -535,7 +535,7 @@ np_clunk(Npreq *req, Npfcall *tc)
 		goto done;
 	}
 	if (req->fid->type & P9_QTTMP) {
-		rc = np_ctl_clunk (req->fid);
+		rc = np_net_clunk (req->fid);
 	} else {
 		if (!req->conn->srv->clunk) {
 			np_uerror (ENOSYS);
@@ -563,8 +563,7 @@ np_remove(Npreq *req, Npfcall *tc)
 		goto done;
 	}
 	if (req->fid->type & P9_QTTMP) {
-		np_uerror (EPERM);
-		goto done;
+		rc = np_net_remove(req->fid);
 	} else {
 		if (np_setfsid (req, req->fid->user, -1) < 0)
 			goto done;
@@ -620,7 +619,7 @@ np_lopen(Npreq *req, Npfcall *tc)
 		goto done;
 	}
 	if (fid->type & P9_QTTMP) {
-		rc = np_ctl_lopen (fid, tc->u.tlopen.flags);
+		rc = np_net_lopen (fid, tc->u.tlopen.flags);
 	} else {
 		if (np_setfsid (req, fid->user, -1) < 0)
 			goto done;
@@ -805,7 +804,7 @@ np_getattr(Npreq *req, Npfcall *tc)
 		goto done;
 	}
 	if (fid->type & P9_QTTMP) {
-		rc = np_ctl_getattr(fid, tc->u.tgetattr.request_mask);
+		rc = np_net_getattr(fid, tc->u.tgetattr.request_mask);
 	} else {
 		if (np_setfsid (req, fid->user, -1) < 0)
 			goto done;
@@ -832,7 +831,7 @@ np_setattr(Npreq *req, Npfcall *tc)
 		goto done;
 	}
 	if (fid->type & P9_QTTMP) {
-		rc = np_ctl_setattr(fid,
+		rc = np_net_setattr(fid,
 				    tc->u.tsetattr.valid,
 				    tc->u.tsetattr.mode,
 				    tc->u.tsetattr.uid,
@@ -948,7 +947,7 @@ np_readdir(Npreq *req, Npfcall *tc)
 		goto done;
 	}
 	if (fid->type & P9_QTTMP) {
-		rc = np_ctl_readdir(fid, tc->u.treaddir.offset,
+		rc = np_net_readdir(fid, tc->u.treaddir.offset,
 				    tc->u.treaddir.count, req);
 	} else {
 		if (np_setfsid (req, fid->user, -1) < 0)
