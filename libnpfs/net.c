@@ -30,6 +30,7 @@ static Npfile *make_node(Npfile *parent, char *name, u8 type, np_file_vtab_t *vt
 static void destroy_node(Npfile *file);
 static int next_inum (void);
 
+static int tcp_ctl_read(Npfile *file, u64 offset, u8 *data, u32 count);
 static int tcp_clone_open(Npfid *fid, int mode);
 static void tcp_sock_cleanup(Npfile *ctlfile);
 
@@ -43,7 +44,9 @@ np_file_vtab_t tcp_sock_vtab = {
 	.cleanup = tcp_sock_cleanup
 };
 
-np_file_vtab_t tcp_ctl_vtab = { 0 };
+np_file_vtab_t tcp_ctl_vtab = {
+	.read = tcp_ctl_read
+};
 
 np_file_vtab_t tcp_data_vtab = { 0 };
 
@@ -56,10 +59,10 @@ int np_file_open(Npfile *file, Npfid *fid, int mode)
 	return 0;
 }
 
-int np_file_read(Npfile *file, u8 *data, u32 count)
+int np_file_read(Npfile *file, u64 offset, u8 *data, u32 count)
 {
 	if (file->vtab->read != 0)
-		return file->vtab->read(file, data, count);
+		return file->vtab->read(file, offset, data, count);
 	return 0;
 }
 
@@ -180,6 +183,20 @@ static int next_inum (void)
 // Polymorphic bits
 //
 
+static int tcp_ctl_read(Npfile *file, u64 offset, u8 *data, u32 count)
+{
+	// reads the name of the parent directory
+	Npfile *sockdir = file->parent;
+
+	u32 len = strlen(sockdir->name);
+	if (offset >= len)
+		return 0;
+	if (offset +count > len)
+		count = len -offset;
+	memcpy(data, sockdir->name +offset, count);
+	return count;
+}
+
 static int tcp_clone_open(Npfid *fid, int mode)
 {
 	Npfile *clonefile = fid->aux;
@@ -299,7 +316,7 @@ Npfcall *np_net_read(Npfid *fid, u64 offset, u32 count, Npreq *req)
 	Npfile *file = fid->aux;
 
 	u8 data[count];
-	int n = np_file_read(file, data, count);
+	int n = np_file_read(file, offset, data, count);
 	if (n < 0) {
 		np_uerror(errno);
 		return 0;

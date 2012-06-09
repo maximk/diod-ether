@@ -258,7 +258,7 @@ enum {
 typedef struct np_file_vtab_t np_file_vtab_t;
 struct np_file_vtab_t {
 	int (*open)(Npfid *fid, int flags);
-	int (*read)(Npfile *file, u8 *data, u32 count);
+	int (*read)(Npfile *file, u64 offset, u8 *data, u32 count);
 	int (*write)(Npfile *file, u8 *data, u32 count);
 	void (*cleanup)(Npfile *file);
 };
