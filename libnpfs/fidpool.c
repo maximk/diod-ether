@@ -68,6 +68,7 @@ _destroy_fid (Npfid *f)
 	}	
 	if (f->user)
 		np_user_decref(f->user);
+	free(f->data);	//MK
 	if (f->tpool)
 		np_tpool_decref(f->tpool);
 	if (f->aname)

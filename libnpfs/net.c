@@ -5,6 +5,7 @@
 #ifdef HAVE_CONFIG
 #include "config.h"
 #endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,6 +13,7 @@
 #include <stdarg.h>
 #include <pthread.h>
 #include <errno.h>
+#include <assert.h>
 #include <fcntl.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -23,6 +25,7 @@
 
 #include <arpa/inet.h>
 #include <poll.h>
+#include <netdb.h>
 
 #include "9p.h"
 #include "npfs.h"
@@ -35,13 +38,14 @@ static Npfile *make_node(Npfile *parent, char *name, u8 type, np_file_vtab_t *vt
 static void destroy_node(Npfile *file);
 static int next_inum (void);
 
-static int tcp_ctl_read(Npfile *file, u64 offset, u8 *data, u32 count);
-static int tcp_ctl_write(Npfile *file, u64 offset, u8 *data, u32 count);
-static int tcp_data_read(Npfile *file, u64 offset, u8 *data, u32 count);
-static int tcp_data_write(Npfile *file, u64 offset, u8 *data, u32 count);
+static int tcp_ctl_read(Npfid *fid, u64 offset, u8 *data, u32 count);
+static int tcp_ctl_write(Npfid *fid, u64 offset, u8 *data, u32 count);
+static int tcp_data_read(Npfid *fid, u64 offset, u8 *data, u32 count);
+static int tcp_data_write(Npfid *fid, u64 offset, u8 *data, u32 count);
 static int tcp_clone_open(Npfid *fid, int mode);
 static int tcp_listen_open(Npfid *fid, int mode);
 static void tcp_sock_cleanup(Npfile *ctlfile);
+static int dns_write(Npfid *fid, u64 offset, u8 *data, u32 count);
 
 np_file_vtab_t tcp_gen_vtab = { 0 };
 
@@ -67,6 +71,10 @@ np_file_vtab_t tcp_listen_vtab = {
    .open = tcp_listen_open,
 };
 
+np_file_vtab_t dns_vtab = {
+	.write = dns_write,
+};
+
 int np_file_open(Npfile *file, Npfid *fid, int mode)
 {
 	if (file->vtab->open != 0)
@@ -74,17 +82,17 @@ int np_file_open(Npfile *file, Npfid *fid, int mode)
 	return 0;
 }
 
-int np_file_read(Npfile *file, u64 offset, u8 *data, u32 count)
+int np_file_read(Npfile *file, Npfid *fid, u64 offset, u8 *data, u32 count)
 {
 	if (file->vtab->read != 0)
-		return file->vtab->read(file, offset, data, count);
+		return file->vtab->read(fid, offset, data, count);
 	return 0;
 }
 
-int np_file_write(Npfile *file, u64 offset, u8 *data, u32 count)
+int np_file_write(Npfile *file, Npfid *fid, u64 offset, u8 *data, u32 count)
 {
 	if (file->vtab->write != 0)
-		return file->vtab->write(file, offset, data, count);
+		return file->vtab->write(fid, offset, data, count);
 	return 0;
 }
 
@@ -97,6 +105,7 @@ void np_file_cleanup(Npfile *file)
 Npfile *np_net_make_root(void)
 {
 	// [net]/tcp/clone
+	// [net]/dns
 	
 	Npfile *netroot = make_node(0, "net", P9_QTDIR, &tcp_gen_vtab);
 	if (netroot == 0)
@@ -107,6 +116,9 @@ Npfile *np_net_make_root(void)
 		goto error;
 	Npfile *clone = make_node(tcpdir, "clone", P9_QTFILE, &tcp_clone_vtab);
 	if (clone == 0)
+		goto error;
+	Npfile *dns = make_node(netroot, "dns", P9_QTFILE, &dns_vtab);
+	if (dns == 0)
 		goto error;
 
 	return netroot;
@@ -198,8 +210,10 @@ static int next_inum (void)
 // Polymorphic bits
 //
 
-static int tcp_ctl_read(Npfile *file, u64 offset, u8 *data, u32 count)
+static int tcp_ctl_read(Npfid *fid, u64 offset, u8 *data, u32 count)
 {
+	Npfile *file = fid->aux;
+
 	// reads the name of the parent directory
 	Npfile *sockdir = file->parent;
 
@@ -222,8 +236,10 @@ static int tcp_ctl_read(Npfile *file, u64 offset, u8 *data, u32 count)
 #define CTL_STATE_LISTENING		2
 #define CTL_STATE_ACCEPTED		3
 
-static int tcp_ctl_write(Npfile *file, u64 offset, u8 *data, u32 count)
+static int tcp_ctl_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 {
+	Npfile *file = fid->aux;
+
 	// accept "connect ip!port" and "announce port"
 	if (offset != 0)
 		goto error2;
@@ -321,8 +337,9 @@ error1:
 	return 0;
 }
 
-static int tcp_data_read(Npfile *file, u64 offset, u8 *data, u32 count)
+static int tcp_data_read(Npfid *fid, u64 offset, u8 *data, u32 count)
 {
+	Npfile *file = fid->aux;
 	Npfile *sockdir = file->parent;
 
 	struct pollfd pfd = {
@@ -346,8 +363,9 @@ static int tcp_data_read(Npfile *file, u64 offset, u8 *data, u32 count)
 	return n;
 }
 
-static int tcp_data_write(Npfile *file, u64 offset, u8 *data, u32 count)
+static int tcp_data_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 {
+	Npfile *file = fid->aux;
 	Npfile *sockdir = file->parent;
 
 	int n = send(sockdir->sock, data, count, 0);
@@ -450,6 +468,124 @@ static void tcp_sock_cleanup(Npfile *ctlfile)
 	printf("~~~ sock %d closed\n", ctlfile->sock);
 }
 
+static int dns_write(Npfid *fid, u64 offset, u8 *data, u32 count)
+{
+	// [!]<host_or_address> <address_family>
+	//
+	// Examples:
+	// google.com 0
+	// google.com 10
+	// !1.2.3.4 0
+	
+	struct addrinfo hints = {
+		.ai_protocol = IPPROTO_TCP,
+		.ai_flags = AI_CANONNAME,
+   	};
+
+	u8 buf[count +1];
+	memcpy(buf, data, count);
+	buf[count] = 0;
+
+	char *node = (char *)buf;
+	if (node[0] == '!')
+	{
+		node++;
+		hints.ai_flags |= AI_NUMERICHOST;
+	}
+
+	char *p = strchr(node, ' ');
+	if (p == 0)
+		goto error1;
+	*p++ = 0;
+	hints.ai_family = atoi(p);
+
+	// prepare reply and save it with the fid
+	u8 *reply;
+	u32 reply_len;
+
+	struct addrinfo *res;
+	int ret_code = getaddrinfo(node, 0, &hints, &res);
+	if (ret_code != 0)
+	{
+		reply_len = 2;
+		reply = malloc(reply_len);
+		if (reply == 0)
+			goto error2;
+
+		u8 *rr = reply;
+		*rr++ = ret_code & 255;
+		*rr++ = (ret_code >> 8) & 255;
+		assert(rr == reply +reply_len);
+	}
+	else
+	{
+		assert(res->ai_canonname != 0);
+		int name_len = strlen(res->ai_canonname);
+
+		reply_len = 2 +2 +name_len;
+		struct addrinfo *ai = res;
+		while (ai != 0)
+		{
+			if (ai->ai_family == AF_INET)
+				reply_len += 2 +4;
+			else if (ai->ai_family == AF_INET6)
+				reply_len += 2 +16;
+			ai = ai->ai_next;
+		}
+
+		reply = malloc(reply_len);
+		if (reply == 0)
+			goto error2;
+
+		u8 *rr = reply;
+		*rr++ = 0;	// success
+		*rr++ = 0;
+
+		*rr++ = name_len & 255;
+		*rr++ = (name_len >> 8) & 255;
+		memcpy(rr, res->ai_canonname, name_len);
+		rr += name_len;
+		ai = res;
+		while (ai != 0)
+		{
+			if (ai->ai_family == AF_INET)
+			{
+				*rr++ = ai->ai_family & 255;
+				*rr++ = (ai->ai_family >> 8) & 255;
+				struct sockaddr_in *sin = (struct sockaddr_in *)ai->ai_addr;
+				memcpy(rr, &sin->sin_addr, 4);
+				rr += 4;
+			}
+			else if (ai->ai_family == AF_INET6)
+			{
+				*rr++ = ai->ai_family & 255;
+				*rr++ = (ai->ai_family >> 8) & 255;
+				struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ai->ai_addr;
+				memcpy(rr, &sin6->sin6_addr, 16);
+				rr += 16;
+			}
+			ai = ai->ai_next;
+		}
+		assert(rr == reply +reply_len);
+	}
+
+	free(fid->data);	// safe if 0
+	fid->data = reply;
+	fid->data_len = reply_len;
+
+	freeaddrinfo(res);
+	return count;
+
+error2:
+	np_uerror(ENOMEM);
+	freeaddrinfo(res);
+	return 0;
+
+error1:
+	np_uerror(EINVAL);
+	return 0;
+}
+
 //
 // Server callbacks
 //
@@ -533,9 +669,24 @@ Npfcall *np_net_read(Npfid *fid, u64 offset, u32 count, Npreq *req)
 	Npfile *file = fid->aux;
 
 	u8 data[count];
-	int n = np_file_read(file, offset, data, count);
-	if (n < 0)
-		return 0;
+	int n;
+
+ 	if (fid->data != 0)
+	{
+		// the fid already has the reply
+		n = fid->data_len - offset;
+		if (n < 0)
+			n = 0;
+		else if (n > count)
+			n = count;
+		memcpy(data, fid->data +offset, n);
+	}
+	else
+	{	
+		n = np_file_read(file, fid, offset, data, count);
+		if (n < 0)
+			return 0;
+	}
 	Npfcall *rc = np_create_rread(n, data);
 	if (rc == 0) {
 		np_uerror(ENOMEM);
@@ -549,7 +700,7 @@ Npfcall *np_net_write(Npfid *fid, u64 offset, u32 count, u8 *data, Npreq *req)
 {
 	Npfile *file = fid->aux;
 
-	int n = np_file_write(file, offset, data, count);
+	int n = np_file_write(file, fid, offset, data, count);
 	if (n < 0)
 		return 0;
 	Npfcall *rc = np_create_rwrite (n);

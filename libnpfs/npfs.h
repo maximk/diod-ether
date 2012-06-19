@@ -127,6 +127,11 @@ struct Npfid {
 	char		*aname;
 	int		flags;
 	void*		aux;
+	
+	//MK
+	u8*			data;
+	u32			data_len;
+	//MK
 
 	Npfid*		next;	/* list of fids within a bucket */
 	Npfid*		prev;
@@ -258,8 +263,8 @@ enum {
 typedef struct np_file_vtab_t np_file_vtab_t;
 struct np_file_vtab_t {
 	int (*open)(Npfid *fid, int flags);
-	int (*read)(Npfile *file, u64 offset, u8 *data, u32 count);
-	int (*write)(Npfile *file, u64 offset, u8 *data, u32 count);
+	int (*read)(Npfid *fid, u64 offset, u8 *data, u32 count);
+	int (*write)(Npfid *fid, u64 offset, u8 *data, u32 count);
 	void (*cleanup)(Npfile *file);
 };
 
