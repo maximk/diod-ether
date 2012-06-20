@@ -470,101 +470,120 @@ static void tcp_sock_cleanup(Npfile *ctlfile)
 
 static int dns_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 {
-	// [!]<host_or_address> <address_family>
+	// <host_or_address> <address_family>
 	//
 	// Examples:
 	// google.com 0
 	// google.com 10
-	// !1.2.3.4 0
 	
-	struct addrinfo hints = {
-		.ai_protocol = IPPROTO_TCP,
-		.ai_flags = AI_CANONNAME,
-   	};
+	// parse request
+	char parse_buf[count +1];
+	memcpy(parse_buf, data, count);
+	parse_buf[count] = 0;
 
-	u8 buf[count +1];
-	memcpy(buf, data, count);
-	buf[count] = 0;
-
-	char *node = (char *)buf;
-	if (node[0] == '!')
-	{
-		node++;
-		hints.ai_flags |= AI_NUMERICHOST;
+	char *p = strchr(parse_buf, ' ');
+	if (p == 0) {
+		np_uerror(EINVAL);
+		return 0;
 	}
-
-	char *p = strchr(node, ' ');
-	if (p == 0)
-		goto error1;
 	*p++ = 0;
-	hints.ai_family = atoi(p);
+	const char *hostname = parse_buf;
+	int family = atoi(p);
 
-	// prepare reply and save it with the fid
+	// get hostent
+	char hent_buf[1024];
+	struct hostent hent;
+	
+	struct hostent *result;
+	int hent_err;
+	gethostbyname2_r(hostname, family,
+			&hent, hent_buf, sizeof(hent_buf),
+			&result, &hent_err);
+
+	// build reply
 	u8 *reply;
-	u32 reply_len;
+	int reply_len;
 
-	struct addrinfo *res;
-	int ret_code = getaddrinfo(node, 0, &hints, &res);
-	if (ret_code != 0)
+	if (result == 0)
 	{
 		reply_len = 2;
 		reply = malloc(reply_len);
-		if (reply == 0)
-			goto error2;
+		if (reply == 0) {
+error1:
+			np_uerror(ENOMEM);
+			return 0;
+		}
 
-		u8 *rr = reply;
-		*rr++ = ret_code & 255;
-		*rr++ = (ret_code >> 8) & 255;
-		assert(rr == reply +reply_len);
+		reply[0] = hent_err & 255;
+		reply[1] = (hent_err >> 8) & 255;
 	}
 	else
 	{
-		assert(res->ai_canonname != 0);
-		int name_len = strlen(res->ai_canonname);
-
-		reply_len = 2 +2 +name_len;
-		struct addrinfo *ai = res;
-		while (ai != 0)
+		// calculate the reply length
+		reply_len = 2;	// 0 for success
+		assert(result->h_name != 0);
+		reply_len += 2 + strlen(result->h_name);
+		char **pal = result->h_aliases;
+		int tot_alias_len = 0;
+		while (*pal != 0)
 		{
-			if (ai->ai_family == AF_INET)
-				reply_len += 2 +4;
-			else if (ai->ai_family == AF_INET6)
-				reply_len += 2 +16;
-			ai = ai->ai_next;
+			tot_alias_len += 2 + strlen(*pal);
+			pal++;
 		}
+		reply_len += 2 +tot_alias_len;
+		reply_len += 2;	// h_addrtype
+		reply_len += 2; // h_length
+		char **paddr = result->h_addr_list;
+		int tot_addr_len = 0;
+		while (*paddr != 0)
+		{
+			tot_addr_len += result->h_length;
+			paddr++;
+		}
+		reply_len += 2 +tot_addr_len;
 
+		// build the reply
 		reply = malloc(reply_len);
 		if (reply == 0)
-			goto error2;
-
+			goto error1;
 		u8 *rr = reply;
+
 		*rr++ = 0;	// success
 		*rr++ = 0;
 
-		*rr++ = name_len & 255;
-		*rr++ = (name_len >> 8) & 255;
-		memcpy(rr, res->ai_canonname, name_len);
-		rr += name_len;
-		ai = res;
-		while (ai != 0)
+		int len = strlen(result->h_name);
+		*rr++ = len & 255;
+		*rr++ = (len >> 8) & 255;
+		memcpy(rr, result->h_name, len);
+		rr += len;
+
+		*rr++ = tot_alias_len & 255;
+		*rr++ = (tot_alias_len >> 8) & 255;
+		pal = result->h_aliases;
+		while (*pal != 0)
 		{
-			if (ai->ai_family == AF_INET)
-			{
-				*rr++ = ai->ai_family & 255;
-				*rr++ = (ai->ai_family >> 8) & 255;
-				struct sockaddr_in *sin = (struct sockaddr_in *)ai->ai_addr;
-				memcpy(rr, &sin->sin_addr, 4);
-				rr += 4;
-			}
-			else if (ai->ai_family == AF_INET6)
-			{
-				*rr++ = ai->ai_family & 255;
-				*rr++ = (ai->ai_family >> 8) & 255;
-				struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ai->ai_addr;
-				memcpy(rr, &sin6->sin6_addr, 16);
-				rr += 16;
-			}
-			ai = ai->ai_next;
+			len = strlen(*pal);
+			*rr++ = len & 255;
+			*rr++ = (len >> 8) & 255;
+			memcpy(rr, *pal, len);
+			rr += len;
+			pal++;
+		}
+
+		*rr++ = result->h_addrtype & 255;
+		*rr++ = (result->h_addrtype >> 8) & 255;
+
+		*rr++ = result->h_length & 255;
+		*rr++ = (result->h_length >> 8) & 255;
+
+		*rr++ = tot_addr_len & 255;
+		*rr++ = (tot_addr_len >> 8) & 255;
+		paddr = result->h_addr_list;
+		while (*paddr != 0)
+		{
+			memcpy(rr, *paddr, result->h_length);
+			rr += result->h_length;
+			paddr++;
 		}
 		assert(rr == reply +reply_len);
 	}
@@ -573,17 +592,7 @@ static int dns_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 	fid->data = reply;
 	fid->data_len = reply_len;
 
-	freeaddrinfo(res);
 	return count;
-
-error2:
-	np_uerror(ENOMEM);
-	freeaddrinfo(res);
-	return 0;
-
-error1:
-	np_uerror(EINVAL);
-	return 0;
 }
 
 //
