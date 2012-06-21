@@ -26,6 +26,7 @@
 #include <arpa/inet.h>
 #include <poll.h>
 #include <netdb.h>
+#include <netinet/tcp.h>
 
 #include "9p.h"
 #include "npfs.h"
@@ -46,6 +47,8 @@ static int tcp_clone_open(Npfid *fid, int mode);
 static int tcp_listen_open(Npfid *fid, int mode);
 static void tcp_sock_cleanup(Npfile *ctlfile);
 static int dns_write(Npfid *fid, u64 offset, u8 *data, u32 count);
+static int tcp_opts_read(Npfid *fid, u64 offset, u8 *data, u32 count);
+static int tcp_opts_write(Npfid *fid, u64 offset, u8 *data, u32 count);
 
 np_file_vtab_t tcp_gen_vtab = { 0 };
 
@@ -73,6 +76,11 @@ np_file_vtab_t tcp_listen_vtab = {
 
 np_file_vtab_t dns_vtab = {
 	.write = dns_write,
+};
+
+np_file_vtab_t tcp_opts_vtab = {
+	.read = tcp_opts_read,
+	.write = tcp_opts_write,
 };
 
 int np_file_open(Npfile *file, Npfid *fid, int mode)
@@ -399,11 +407,16 @@ static int tcp_clone_open(Npfid *fid, int mode)
 	if (ctlfile == 0)
 		goto error2;
 	ctlfile->state = CTL_STATE_CREATED;
+	Npfile *optsfile = make_node(sockdir, "opts", P9_QTFILE, &tcp_opts_vtab);
+	if (optsfile == 0)
+		goto error3;
 
 	printf("~~~ sock %d alloc\n", sock);
 	fid->aux = ctlfile;
 	return 0;
 
+error3:
+	destroy_node(ctlfile);
 error2:
 	destroy_node(sockdir);
 error1:
@@ -448,10 +461,15 @@ static int tcp_listen_open(Npfid *fid, int mode)
 	Npfile *datafile = make_node(newdir, "data", P9_QTFILE, &tcp_data_vtab);
 	if (datafile == 0)
 		goto error3;
+	Npfile *optsfile = make_node(newdir, "opts", P9_QTFILE, &tcp_opts_vtab);
+	if (optsfile == 0)
+		goto error4;
 
 	fid->aux = datafile;
 	return 0;
 
+error4:
+	destroy_node(datafile);
 error3:
 	destroy_node(ctlfile);
 error2:
@@ -593,6 +611,106 @@ error1:
 	fid->data_len = reply_len;
 
 	return count;
+}
+
+static int tcp_opts_read(Npfid *fid, u64 offset, u8 *data, u32 count)
+{
+	Npfile *file = fid->aux;
+	Npfile *sockdir = file->parent;
+	assert(sockdir != 0);
+	int sock = sockdir->sock;
+
+	// {active,true|false|once} - proc
+	// {delay_send,Bool} - proc, not supported
+	// {dontroute,Bool} - SO_DONTROUTE
+	// {exit_on_close,Bool} = proc, not supported
+	// {header,Sz} - proc
+	// {keepalive,Bool} - SO_KEEPALIVE
+	// {nodelay,Bool} - TCP_NODELAY (IPPROTO_IP)
+	// {packet,raw|0|1|2|4} - proc
+	// {packet_size,Sz} - proc
+	// {recbuf,Sz} = SO_RCVBUF
+	// {reuseaddr,Bool} = SO_REUSEADDR
+	// {send_timeout,N} = SO_SNDTIMEO
+	// {send_timeout_close,Bool} = proc
+	// {sndbuf,Sz} = SO_SNDBUF
+	
+	// SO_REUSEADDR [b]
+	// SO_RCVBUF [4]
+	// SO_SNDBUF [4]
+	// SO_DONTROUTE [b]
+	// TCP_NODELAY (IPPROTO_IP) [b]
+	// SO_KEEPALIVE [b]
+	// SO_SNDTIMEO [8]
+	
+	int len = 1 +4 +4 +1 +1 +1 +8;
+	if (offset != 0 || count < len)
+		return 0;
+
+	u8 *rr = data;
+	union {
+		int i;
+		struct timeval tv;
+	} optval;
+	socklen_t optlen;
+
+	optlen = 4;
+	int ret_code = getsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, &optlen);
+	assert(ret_code == 0 && optlen == 4);
+	*rr++ = optval.i & 255;
+
+	optlen = 4;
+	ret_code = getsockopt(sock, SOL_SOCKET, SO_RCVBUF, &optval, &optlen);
+	assert(ret_code == 0 && optlen == 4);
+	*rr++ = optval.i & 255;
+	*rr++ = (optval.i >> 8) & 255;
+	*rr++ = (optval.i >> 16) & 255;
+	*rr++ = (optval.i >> 24) & 255;
+
+	optlen = 4;
+	ret_code = getsockopt(sock, SOL_SOCKET, SO_SNDBUF, &optval, &optlen);
+	assert(ret_code == 0 && optlen == 4);
+	*rr++ = optval.i & 255;
+	*rr++ = (optval.i >> 8) & 255;
+	*rr++ = (optval.i >> 16) & 255;
+	*rr++ = (optval.i >> 24) & 255;
+
+	optlen = 4;
+	ret_code = getsockopt(sock, SOL_SOCKET, SO_DONTROUTE, &optval, &optlen);
+	assert(ret_code == 0 && optlen == 4);
+	*rr++ = optval.i & 255;
+
+	optlen = 4;
+	ret_code = getsockopt(sock, IPPROTO_IP, TCP_NODELAY, &optval, &optlen);
+	assert(ret_code == 0 && optlen == 4);
+	*rr++ = optval.i & 255;
+
+	optlen = 4;
+	ret_code = getsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &optval, &optlen);
+	assert(ret_code == 0 && optlen == 4);
+	*rr++ = optval.i & 255;
+
+	optlen = sizeof(struct timeval);
+	ret_code = getsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &optval, &optlen);
+	assert(ret_code == 0 && optlen == sizeof(struct timeval));
+	u64 micros = (u64)optval.tv.tv_sec * 1000000 + optval.tv.tv_usec;
+	*rr++ = micros & 255;
+	*rr++ = (micros >> 8) & 255;
+	*rr++ = (micros >> 16) & 255;
+	*rr++ = (micros >> 24) & 255;
+	*rr++ = (micros >> 32) & 255;
+	*rr++ = (micros >> 40) & 255;
+	*rr++ = (micros >> 48) & 255;
+	*rr++ = (micros >> 56) & 255;
+
+	assert(rr == data +len);
+	return len;
+}
+
+static int tcp_opts_write(Npfid *fid, u64 offset, u8 *data, u32 count)
+{
+	//TODO
+	return 0;
 }
 
 //
