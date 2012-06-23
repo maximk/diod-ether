@@ -35,6 +35,14 @@
 
 #define POLL_TIMEOUT	5000
 
+#define VA_REUSEADDR	0x0001
+#define VA_RCVBUF		0x0002
+#define VA_SNDBUF		0x0004
+#define VA_DONTROUTE	0x0008
+#define VA_NODELAY		0x0010
+#define VA_KEEPALIVE	0x0020
+#define VA_SNDTIMEO		0x0040
+
 static Npfile *make_node(Npfile *parent, char *name, u8 type, np_file_vtab_t *vtab);
 static void destroy_node(Npfile *file);
 static int next_inum (void);
@@ -620,21 +628,7 @@ static int tcp_opts_read(Npfid *fid, u64 offset, u8 *data, u32 count)
 	assert(sockdir != 0);
 	int sock = sockdir->sock;
 
-	// {active,true|false|once} - proc
-	// {delay_send,Bool} - proc, not supported
-	// {dontroute,Bool} - SO_DONTROUTE
-	// {exit_on_close,Bool} = proc, not supported
-	// {header,Sz} - proc
-	// {keepalive,Bool} - SO_KEEPALIVE
-	// {nodelay,Bool} - TCP_NODELAY (IPPROTO_IP)
-	// {packet,raw|0|1|2|4} - proc
-	// {packet_size,Sz} - proc
-	// {recbuf,Sz} = SO_RCVBUF
-	// {reuseaddr,Bool} = SO_REUSEADDR
-	// {send_timeout,N} = SO_SNDTIMEO
-	// {send_timeout_close,Bool} = proc
-	// {sndbuf,Sz} = SO_SNDBUF
-	
+	// (valid mask) [4]
 	// SO_REUSEADDR [b]
 	// SO_RCVBUF [4]
 	// SO_SNDBUF [4]
@@ -643,7 +637,7 @@ static int tcp_opts_read(Npfid *fid, u64 offset, u8 *data, u32 count)
 	// SO_KEEPALIVE [b]
 	// SO_SNDTIMEO [8]
 	
-	int len = 1 +4 +4 +1 +1 +1 +8;
+	int len = 4 +1 +4 +4 +1 +1 +1 +8;
 	if (offset != 0 || count < len)
 		return 0;
 
@@ -653,6 +647,18 @@ static int tcp_opts_read(Npfid *fid, u64 offset, u8 *data, u32 count)
 		struct timeval tv;
 	} optval;
 	socklen_t optlen;
+
+	u32 valid = VA_REUSEADDR |
+				VA_RCVBUF |
+				VA_SNDBUF |
+				VA_DONTROUTE |
+				VA_NODELAY |
+				VA_KEEPALIVE |
+				VA_SNDTIMEO;
+	*rr++ = valid & 255;
+	*rr++ = (valid >> 8) & 255;
+	*rr++ = (valid >> 16) & 255;
+	*rr++ = (valid >> 24) & 255;
 
 	optlen = 4;
 	int ret_code = getsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, &optlen);
@@ -704,13 +710,96 @@ static int tcp_opts_read(Npfid *fid, u64 offset, u8 *data, u32 count)
 	*rr++ = (micros >> 56) & 255;
 
 	assert(rr == data +len);
+	printf("~~~ sock %d opts read\n", sock);
 	return len;
 }
 
 static int tcp_opts_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 {
-	//TODO
-	return 0;
+	Npfile *file = fid->aux;
+	Npfile *sockdir = file->parent;
+	int sock = sockdir->sock;
+
+	if (offset != 0 || count != 4 +1 +4 +4 +1 +1 +1 +8) {
+		np_uerror(EINVAL);
+		return 0;
+	}
+
+	u8 *rr = data;
+	u32 valid = ((u32)rr[0] << 24) | ((u32)rr[1] << 16) | ((u32)rr[2] << 8) | rr[3];
+	rr += 4;
+
+	if (valid & VA_REUSEADDR)
+	{
+		int optval = rr[0];
+		int ret_code = setsockopt(sock,
+				SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+		assert(ret_code == 0);
+	}
+	rr++;
+
+	if (valid & VA_RCVBUF)
+	{
+		u32 optval = ((u32)rr[0] << 24) | ((u32)rr[1] << 16) | ((u32)rr[2] << 8) | rr[3];
+		int ret_code = setsockopt(sock,
+				SOL_SOCKET, SO_RCVBUF, &optval, sizeof(optval));
+		assert(ret_code == 0);
+	}
+	rr += 4;
+
+	if (valid & VA_SNDBUF)
+   	{
+		u32 optval = ((u32)rr[0] << 24) | ((u32)rr[1] << 16) | ((u32)rr[2] << 8) | rr[3];
+		int ret_code = setsockopt(sock,
+				SOL_SOCKET, SO_SNDBUF, &optval, sizeof(optval));
+		assert(ret_code == 0);
+	}
+	rr += 4;
+
+	if (valid & VA_DONTROUTE)
+	{
+		int optval = rr[0];
+		int ret_code = setsockopt(sock,
+				SOL_SOCKET, SO_DONTROUTE, &optval, sizeof(optval));
+		assert(ret_code == 0);
+	}
+	rr++;
+
+	if (valid & VA_NODELAY)
+	{
+		int optval = rr[0];
+		int ret_code = setsockopt(sock,
+				IPPROTO_IP, TCP_NODELAY, &optval, sizeof(optval));
+		assert(ret_code == 0);
+	}
+	rr++;
+
+	if (valid & VA_KEEPALIVE)
+	{
+		int optval = rr[0];
+		int ret_code = setsockopt(sock,
+				SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
+		assert(ret_code == 0);
+	}
+	rr++;
+
+	if (valid & VA_SNDTIMEO)
+	{
+		u64 micros = ((u64)rr[0] << 56) | ((u64)rr[1] << 48) | ((u64)rr[2] << 40) | ((u64)rr[3] << 32) |
+					 ((u64)rr[4] << 24) | ((u64)rr[5] << 16) | ((u64)rr[6] << 8) | rr[7];
+		struct timeval optval = {
+			.tv_sec = micros / 1000000,
+			.tv_usec = micros % 1000000,
+		};
+		int ret_code = setsockopt(sock,
+				SOL_SOCKET, SO_SNDTIMEO, &optval, sizeof(optval));
+		assert(ret_code == 0);
+	}
+	rr += 8;
+
+	assert(rr == data +count);
+	printf("~~~ sock %d opts set\n", sock);
+	return count;
 }
 
 //
