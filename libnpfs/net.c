@@ -57,6 +57,8 @@ static void tcp_sock_cleanup(Npfile *ctlfile);
 static int dns_write(Npfid *fid, u64 offset, u8 *data, u32 count);
 static int tcp_opts_read(Npfid *fid, u64 offset, u8 *data, u32 count);
 static int tcp_opts_write(Npfid *fid, u64 offset, u8 *data, u32 count);
+static int tcp_peer_read(Npfid *fid, u64 offset, u8 *data, u32 count);
+static int tcp_local_read(Npfid *fid, u64 offset, u8 *data, u32 count);
 
 np_file_vtab_t tcp_gen_vtab = { 0 };
 
@@ -89,6 +91,14 @@ np_file_vtab_t dns_vtab = {
 np_file_vtab_t tcp_opts_vtab = {
 	.read = tcp_opts_read,
 	.write = tcp_opts_write,
+};
+
+np_file_vtab_t tcp_peer_vtab = {
+	.read = tcp_peer_read,
+};
+
+np_file_vtab_t tcp_local_vtab = {
+	.read = tcp_local_read,
 };
 
 int np_file_open(Npfile *file, Npfid *fid, int mode)
@@ -210,7 +220,7 @@ static void destroy_node(Npfile *file)
 	free(file);
 }
 
-static int next_inum (void)
+static int next_inum(void)
 {
 	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	static int i = 1;
@@ -298,7 +308,18 @@ static int tcp_ctl_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 		}
 
 		Npfile *datafile = make_node(sockdir, "data", P9_QTFILE, &tcp_data_vtab);
-		if (datafile == 0) {
+		if (datafile == 0)
+			goto nomem1;
+		Npfile *peerfile = make_node(sockdir, "peer", P9_QTFILE, &tcp_peer_vtab);
+		if (peerfile == 0)
+			goto nomem2;
+		Npfile *localfile = make_node(sockdir, "local", P9_QTFILE, &tcp_local_vtab);
+		if (localfile == 0)
+		{
+			destroy_node(peerfile);
+nomem2:
+			destroy_node(datafile);
+nomem1:
 			np_uerror(ENOMEM);
 			return -1;
 		}
@@ -310,8 +331,8 @@ static int tcp_ctl_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 	{
 		char *p = (char *)data +CTL_PREF_ANNOUNCE_LEN;
 		int port = atoi(p);
-		if (port == 0)
-			goto error1;
+		//if (port == 0)
+		//	goto error1;
 
 		struct sockaddr_in sa = {
 			.sin_family = AF_INET,
@@ -326,7 +347,12 @@ static int tcp_ctl_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 		printf("~~~ sock %d bound to port %d\n", sockdir->sock, port);
 
 		Npfile *listenfile = make_node(sockdir, "listen", P9_QTFILE, &tcp_listen_vtab);
-		if (listenfile == 0) {
+		if (listenfile == 0)
+			goto nomem3;
+		Npfile *localfile = make_node(sockdir, "local", P9_QTFILE, &tcp_local_vtab);
+		if (localfile == 0) {
+			destroy_node(listenfile);
+nomem3:
 			np_uerror(ENOMEM);
 			return -1;
 		}
@@ -472,10 +498,21 @@ static int tcp_listen_open(Npfid *fid, int mode)
 	Npfile *optsfile = make_node(newdir, "opts", P9_QTFILE, &tcp_opts_vtab);
 	if (optsfile == 0)
 		goto error4;
+	Npfile *peerfile = make_node(newdir, "peer", P9_QTFILE, &tcp_peer_vtab);
+	if (peerfile == 0)
+		goto error5;
+	Npfile *localfile = make_node(newdir, "local", P9_QTFILE, &tcp_local_vtab);
+	if (localfile == 0)
+		goto error6;
 
+	printf("~~~ sock %d accepted\n", newsock);
 	fid->aux = datafile;
 	return 0;
 
+error6:
+	destroy_node(peerfile);
+error5:
+	destroy_node(optsfile);
 error4:
 	destroy_node(datafile);
 error3:
@@ -499,8 +536,14 @@ static int dns_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 	// <host_or_address> <address_family>
 	//
 	// Examples:
-	// google.com 0
-	// google.com 10
+	//
+	// use gerhostbyname2_r:
+	// 	google.com 0
+	// 	google.com 10
+	//
+	// use gethostbyaddr_r:
+	// 	!173.19.40.30 2
+	//
 	
 	// parse request
 	char parse_buf[count +1];
@@ -514,6 +557,9 @@ static int dns_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 	}
 	*p++ = 0;
 	const char *hostname = parse_buf;
+	int use_addr = hostname[0] == '!';
+	if (use_addr)
+		hostname++;
 	int family = atoi(p);
 
 	// get hostent
@@ -522,9 +568,26 @@ static int dns_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 	
 	struct hostent *result;
 	int hent_err;
-	gethostbyname2_r(hostname, family,
-			&hent, hent_buf, sizeof(hent_buf),
-			&result, &hent_err);
+	
+	if (use_addr)
+	{
+		u8 addr_buf[16];
+		int addr_len = (family == AF_INET) ?4 :16;
+		if (inet_pton(family, hostname, addr_buf) < 0) {
+			np_uerror(errno);
+			return 0;
+		}
+
+		gethostbyaddr_r(addr_buf, addr_len, family,
+				&hent, hent_buf, sizeof(hent_buf),
+				&result, &hent_err);
+	}
+	else
+	{
+		gethostbyname2_r(hostname, family,
+				&hent, hent_buf, sizeof(hent_buf),
+				&result, &hent_err);
+	}
 
 	// build reply
 	u8 *reply;
@@ -800,6 +863,114 @@ static int tcp_opts_write(Npfid *fid, u64 offset, u8 *data, u32 count)
 	assert(rr == data +count);
 	printf("~~~ sock %d opts set\n", sock);
 	return count;
+}
+
+static int tcp_peer_read(Npfid *fid, u64 offset, u8 *data, u32 count)
+{
+	Npfile *file = fid->aux;
+	Npfile *sockdir = file->parent;
+	int sock = sockdir->sock;
+
+	if (offset != 0)
+		return 0;
+
+	u8 buf[64];
+	struct sockaddr *addr = (struct sockaddr *)buf;
+	socklen_t addrlen = sizeof(buf);
+	if (getpeername(sock, addr, &addrlen) < 0) {
+		np_uerror(errno);
+		return 0;
+	}
+
+	u8 *rr = data;
+	int reply_len;
+	if (addr->sa_family == AF_INET)
+	{
+		reply_len = 1 +4 +2;
+		if (count < reply_len)
+			return 0;
+
+		struct sockaddr_in *sin = (struct sockaddr_in *)addr;
+		*rr++ = AF_INET;
+		memcpy(rr, &sin->sin_addr, 4);
+		rr += 4;
+		int port = ntohs(sin->sin_port);
+		*rr++ = port & 255;
+		*rr++ = (port >> 8) & 255;
+		assert(rr == data +reply_len);
+	}
+	else
+	{
+		assert(addr->sa_family == AF_INET6);
+		reply_len = 1 +16 +2;
+		if (count < reply_len)
+			return 0;
+
+		struct sockaddr_in6 *sin = (struct sockaddr_in6 *)addr;
+		*rr++ = AF_INET6;
+		memcpy(rr, &sin->sin6_addr, 16);
+		rr += 16;
+		int port = ntohs(sin->sin6_port);
+		*rr++ = port & 255;
+		*rr++ = (port >> 8) & 255;
+		assert(rr == data +reply_len);
+	}
+
+	return reply_len;
+}
+
+static int tcp_local_read(Npfid *fid, u64 offset, u8 *data, u32 count)
+{
+	Npfile *file = fid->aux;
+	Npfile *sockdir = file->parent;
+	int sock = sockdir->sock;
+
+	if (offset != 0)
+		return 0;
+
+	u8 buf[64];
+	struct sockaddr *addr = (struct sockaddr *)buf;
+	socklen_t addrlen = sizeof(buf);
+	if (getsockname(sock, addr, &addrlen) < 0) {
+		np_uerror(errno);
+		return 0;
+	}
+
+	u8 *rr = data;
+	int reply_len;
+	if (addr->sa_family == AF_INET)
+	{
+		reply_len = 1 +4 +2;
+		if (count < reply_len)
+			return 0;
+
+		struct sockaddr_in *sin = (struct sockaddr_in *)addr;
+		*rr++ = AF_INET;
+		memcpy(rr, &sin->sin_addr, 4);
+		rr += 4;
+		int port = ntohs(sin->sin_port);
+		*rr++ = port & 255;
+		*rr++ = (port >> 8) & 255;
+		assert(rr == data +reply_len);
+	}
+	else
+	{
+		assert(addr->sa_family == AF_INET6);
+		reply_len = 1 +16 +2;
+		if (count < reply_len)
+			return 0;
+
+		struct sockaddr_in6 *sin = (struct sockaddr_in6 *)addr;
+		*rr++ = AF_INET6;
+		memcpy(rr, &sin->sin6_addr, 16);
+		rr += 16;
+		int port = ntohs(sin->sin6_port);
+		*rr++ = port & 255;
+		*rr++ = (port >> 8) & 255;
+		assert(rr == data +reply_len);
+	}
+
+	return reply_len;
 }
 
 //
