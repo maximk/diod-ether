@@ -114,7 +114,7 @@
 /* #undef HAVE_LGETXATTR */
 
 /* Define to 1 if you have the `cap' library (-lcap). */
-/* #undef HAVE_LIBCAP */
+#define HAVE_LIBCAP 1
 
 /* Define to 1 if you have the `ibverbs' library (-libverbs). */
 /* #undef HAVE_LIBIBVERBS */
@@ -144,10 +144,10 @@
 /* #undef HAVE_LSETXATTR */
 
 /* Define to 1 if you have the <lualib.h> header file. */
-/* #undef HAVE_LUALIB_H */
+#define HAVE_LUALIB_H 1
 
 /* Define to 1 if you have the <lua.h> header file. */
-/* #undef HAVE_LUA_H */
+#define HAVE_LUA_H 1
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -302,7 +302,7 @@
 #define VERSION "1.0.10"
 
 /* build Xen Ethernet transport */
-/* #undef WITH_ETHERTRANS */
+#define WITH_ETHERTRANS 1
 
 /* Define lsd_fatal_error */
 #define WITH_LSD_FATAL_ERROR_FUNC 1

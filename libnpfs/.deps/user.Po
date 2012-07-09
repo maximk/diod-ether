@@ -29,6 +29,12 @@ user.o: user.c ../config/config.h /usr/include/stdlib.h \
  /usr/include/sys/syscall.h /usr/include/asm/unistd.h \
  /usr/include/asm/unistd_32.h /usr/include/bits/syscall.h \
  /usr/include/sys/fsuid.h /usr/include/pwd.h /usr/include/grp.h \
+ /usr/include/sys/capability.h /usr/include/linux/types.h \
+ /usr/include/asm/types.h /usr/include/asm-generic/types.h \
+ /usr/include/asm-generic/int-ll64.h /usr/include/asm/bitsperlong.h \
+ /usr/include/asm-generic/bitsperlong.h /usr/include/linux/posix_types.h \
+ /usr/include/linux/stddef.h /usr/include/asm/posix_types.h \
+ /usr/include/asm/posix_types_32.h /usr/include/linux/capability.h \
  /usr/include/sys/prctl.h /usr/include/linux/prctl.h 9p.h npfs.h \
  xpthread.h npfsimpl.h
 
@@ -155,6 +161,30 @@ user.o: user.c ../config/config.h /usr/include/stdlib.h \
 /usr/include/pwd.h:
 
 /usr/include/grp.h:
+
+/usr/include/sys/capability.h:
+
+/usr/include/linux/types.h:
+
+/usr/include/asm/types.h:
+
+/usr/include/asm-generic/types.h:
+
+/usr/include/asm-generic/int-ll64.h:
+
+/usr/include/asm/bitsperlong.h:
+
+/usr/include/asm-generic/bitsperlong.h:
+
+/usr/include/linux/posix_types.h:
+
+/usr/include/linux/stddef.h:
+
+/usr/include/asm/posix_types.h:
+
+/usr/include/asm/posix_types_32.h:
+
+/usr/include/linux/capability.h:
 
 /usr/include/sys/prctl.h:
 

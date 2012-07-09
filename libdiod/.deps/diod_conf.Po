@@ -27,7 +27,9 @@ diod_conf.o: diod_conf.c ../config/config.h /usr/include/unistd.h \
  /usr/include/limits.h /usr/include/bits/posix1_lim.h \
  /usr/include/bits/local_lim.h /usr/include/linux/limits.h \
  /usr/include/bits/posix2_lim.h /usr/include/bits/xopen_lim.h \
- /usr/include/ctype.h /usr/include/signal.h /usr/include/bits/signum.h \
+ /usr/include/lua.h /usr/include/luaconf.h /usr/include/lauxlib.h \
+ /usr/include/lua.h /usr/include/lualib.h /usr/include/ctype.h \
+ /usr/include/signal.h /usr/include/bits/signum.h \
  /usr/include/bits/siginfo.h /usr/include/bits/sigaction.h \
  /usr/include/bits/sigcontext.h /usr/include/asm/sigcontext.h \
  /usr/include/linux/types.h /usr/include/asm/types.h \
@@ -153,6 +155,16 @@ diod_conf.o: diod_conf.c ../config/config.h /usr/include/unistd.h \
 /usr/include/bits/posix2_lim.h:
 
 /usr/include/bits/xopen_lim.h:
+
+/usr/include/lua.h:
+
+/usr/include/luaconf.h:
+
+/usr/include/lauxlib.h:
+
+/usr/include/lua.h:
+
+/usr/include/lualib.h:
 
 /usr/include/ctype.h:
 
