@@ -126,9 +126,9 @@ diod_ether_accept_one(Npsrv *srv, diod_ether_t *ether)
 				if (rta->rta_type == IFLA_IFNAME)
 				{
 					ifname = RTA_DATA(rta);
-					ifname_ok = ifname[0] == 'x' &&
-								ifname[1] == 'e' &&
-								ifname[2] == 'n';
+					ifname_ok = ifname[0] == 'v' &&
+								ifname[1] == 'i' &&
+								ifname[2] == 'f';
 				}
 				if (rta->rta_type == IFLA_OPERSTATE && dlen == 1)
 				{
@@ -142,7 +142,7 @@ diod_ether_accept_one(Npsrv *srv, diod_ether_t *ether)
 				rta = RTA_NEXT(rta, rta_len);
 			}
 
-			if (oper_state_ok && protinfo_ok && ++ether->try >= 2)
+			if (ifname_ok && oper_state_ok && protinfo_ok && ++ether->try >= 2)
 			{
 				msg("ether: link %s added", ifname);
 				Nptrans *trans = np_ethertrans_create(ifi->ifi_index);
@@ -246,9 +246,9 @@ static void connect_existing_interfaces(Npsrv *srv, diod_ether_t *ether)
 				if (rta->rta_type == IFLA_IFNAME)
 				{
 					ifname = RTA_DATA(rta);
-					ifname_ok = ifname[0] == 'x' &&
-								ifname[1] == 'e' &&
-								ifname[2] == 'n';
+					ifname_ok = ifname[0] == 'v' &&
+								ifname[1] == 'i' &&
+								ifname[2] == 'f';
 				}
 				rta = RTA_NEXT(rta, rta_len);
 			}

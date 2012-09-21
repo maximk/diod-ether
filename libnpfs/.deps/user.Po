@@ -1,8 +1,8 @@
 user.o: user.c ../config/config.h /usr/include/stdlib.h \
  /usr/include/features.h /usr/include/sys/cdefs.h \
  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
- /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/i586-suse-linux/4.5/include/stddef.h \
+ /usr/include/gnu/stubs-64.h \
+ /usr/lib64/gcc/x86_64-suse-linux/4.6/include/stddef.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/endian.h /usr/include/bits/endian.h \
  /usr/include/bits/byteswap.h /usr/include/xlocale.h \
@@ -13,13 +13,12 @@ user.o: user.c ../config/config.h /usr/include/stdlib.h \
  /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h \
  /usr/include/alloca.h /usr/include/stdio.h /usr/include/libio.h \
  /usr/include/_G_config.h /usr/include/wchar.h \
- /usr/lib/gcc/i586-suse-linux/4.5/include/stdarg.h \
+ /usr/lib64/gcc/x86_64-suse-linux/4.6/include/stdarg.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
- /usr/include/bits/stdio.h /usr/include/string.h \
- /usr/include/bits/string.h /usr/include/bits/string2.h \
- /usr/lib/gcc/i586-suse-linux/4.5/include/stdint.h /usr/include/stdint.h \
- /usr/include/bits/wchar.h /usr/include/pthread.h /usr/include/sched.h \
- /usr/include/bits/sched.h /usr/include/signal.h \
+ /usr/include/string.h \
+ /usr/lib64/gcc/x86_64-suse-linux/4.6/include/stdint.h \
+ /usr/include/stdint.h /usr/include/bits/wchar.h /usr/include/pthread.h \
+ /usr/include/sched.h /usr/include/bits/sched.h /usr/include/bits/timex.h \
  /usr/include/bits/setjmp.h /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
@@ -27,14 +26,14 @@ user.o: user.c ../config/config.h /usr/include/stdlib.h \
  /usr/include/bits/posix_opt.h /usr/include/bits/environments.h \
  /usr/include/bits/confname.h /usr/include/getopt.h \
  /usr/include/sys/syscall.h /usr/include/asm/unistd.h \
- /usr/include/asm/unistd_32.h /usr/include/bits/syscall.h \
+ /usr/include/asm/unistd_64.h /usr/include/bits/syscall.h \
  /usr/include/sys/fsuid.h /usr/include/pwd.h /usr/include/grp.h \
  /usr/include/sys/capability.h /usr/include/linux/types.h \
  /usr/include/asm/types.h /usr/include/asm-generic/types.h \
  /usr/include/asm-generic/int-ll64.h /usr/include/asm/bitsperlong.h \
  /usr/include/asm-generic/bitsperlong.h /usr/include/linux/posix_types.h \
  /usr/include/linux/stddef.h /usr/include/asm/posix_types.h \
- /usr/include/asm/posix_types_32.h /usr/include/linux/capability.h \
+ /usr/include/asm/posix_types_64.h /usr/include/linux/capability.h \
  /usr/include/sys/prctl.h /usr/include/linux/prctl.h 9p.h npfs.h \
  xpthread.h npfsimpl.h
 
@@ -50,9 +49,9 @@ user.o: user.c ../config/config.h /usr/include/stdlib.h \
 
 /usr/include/gnu/stubs.h:
 
-/usr/include/gnu/stubs-32.h:
+/usr/include/gnu/stubs-64.h:
 
-/usr/lib/gcc/i586-suse-linux/4.5/include/stddef.h:
+/usr/lib64/gcc/x86_64-suse-linux/4.6/include/stddef.h:
 
 /usr/include/bits/waitflags.h:
 
@@ -96,21 +95,15 @@ user.o: user.c ../config/config.h /usr/include/stdlib.h \
 
 /usr/include/wchar.h:
 
-/usr/lib/gcc/i586-suse-linux/4.5/include/stdarg.h:
+/usr/lib64/gcc/x86_64-suse-linux/4.6/include/stdarg.h:
 
 /usr/include/bits/stdio_lim.h:
 
 /usr/include/bits/sys_errlist.h:
 
-/usr/include/bits/stdio.h:
-
 /usr/include/string.h:
 
-/usr/include/bits/string.h:
-
-/usr/include/bits/string2.h:
-
-/usr/lib/gcc/i586-suse-linux/4.5/include/stdint.h:
+/usr/lib64/gcc/x86_64-suse-linux/4.6/include/stdint.h:
 
 /usr/include/stdint.h:
 
@@ -122,7 +115,7 @@ user.o: user.c ../config/config.h /usr/include/stdlib.h \
 
 /usr/include/bits/sched.h:
 
-/usr/include/signal.h:
+/usr/include/bits/timex.h:
 
 /usr/include/bits/setjmp.h:
 
@@ -152,7 +145,7 @@ user.o: user.c ../config/config.h /usr/include/stdlib.h \
 
 /usr/include/asm/unistd.h:
 
-/usr/include/asm/unistd_32.h:
+/usr/include/asm/unistd_64.h:
 
 /usr/include/bits/syscall.h:
 
@@ -182,7 +175,7 @@ user.o: user.c ../config/config.h /usr/include/stdlib.h \
 
 /usr/include/asm/posix_types.h:
 
-/usr/include/asm/posix_types_32.h:
+/usr/include/asm/posix_types_64.h:
 
 /usr/include/linux/capability.h:
 

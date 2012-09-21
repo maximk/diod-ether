@@ -1,11 +1,11 @@
 hash.o: hash.c ../config/config.h /usr/include/assert.h \
  /usr/include/features.h /usr/include/sys/cdefs.h \
  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
- /usr/include/gnu/stubs-32.h /usr/include/errno.h \
+ /usr/include/gnu/stubs-64.h /usr/include/errno.h \
  /usr/include/bits/errno.h /usr/include/linux/errno.h \
  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
  /usr/include/asm-generic/errno-base.h /usr/include/stdlib.h \
- /usr/lib/gcc/i586-suse-linux/4.5/include/stddef.h \
+ /usr/lib64/gcc/x86_64-suse-linux/4.6/include/stddef.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/endian.h /usr/include/bits/endian.h \
  /usr/include/bits/byteswap.h /usr/include/xlocale.h \
@@ -14,10 +14,9 @@ hash.o: hash.c ../config/config.h /usr/include/assert.h \
  /usr/include/sys/select.h /usr/include/bits/select.h \
  /usr/include/bits/sigset.h /usr/include/bits/time.h \
  /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h \
- /usr/include/alloca.h /usr/include/string.h /usr/include/bits/string.h \
- /usr/include/bits/string2.h thread.h /usr/include/pthread.h \
- /usr/include/sched.h /usr/include/bits/sched.h /usr/include/signal.h \
- /usr/include/bits/setjmp.h hash.h
+ /usr/include/alloca.h /usr/include/string.h thread.h \
+ /usr/include/pthread.h /usr/include/sched.h /usr/include/bits/sched.h \
+ /usr/include/bits/timex.h /usr/include/bits/setjmp.h hash.h
 
 ../config/config.h:
 
@@ -31,7 +30,7 @@ hash.o: hash.c ../config/config.h /usr/include/assert.h \
 
 /usr/include/gnu/stubs.h:
 
-/usr/include/gnu/stubs-32.h:
+/usr/include/gnu/stubs-64.h:
 
 /usr/include/errno.h:
 
@@ -47,7 +46,7 @@ hash.o: hash.c ../config/config.h /usr/include/assert.h \
 
 /usr/include/stdlib.h:
 
-/usr/lib/gcc/i586-suse-linux/4.5/include/stddef.h:
+/usr/lib64/gcc/x86_64-suse-linux/4.6/include/stddef.h:
 
 /usr/include/bits/waitflags.h:
 
@@ -85,10 +84,6 @@ hash.o: hash.c ../config/config.h /usr/include/assert.h \
 
 /usr/include/string.h:
 
-/usr/include/bits/string.h:
-
-/usr/include/bits/string2.h:
-
 thread.h:
 
 /usr/include/pthread.h:
@@ -97,7 +92,7 @@ thread.h:
 
 /usr/include/bits/sched.h:
 
-/usr/include/signal.h:
+/usr/include/bits/timex.h:
 
 /usr/include/bits/setjmp.h:
 

@@ -144,10 +144,10 @@
 /* #undef HAVE_LSETXATTR */
 
 /* Define to 1 if you have the <lualib.h> header file. */
-#define HAVE_LUALIB_H 1
+/* #undef HAVE_LUALIB_H */
 
 /* Define to 1 if you have the <lua.h> header file. */
-#define HAVE_LUA_H 1
+/* #undef HAVE_LUA_H */
 
 /* Define to 1 if you have the <memory.h> header file. */
 #define HAVE_MEMORY_H 1
@@ -347,10 +347,10 @@
 #define X_INFODIR "${prefix}/share/info"
 
 /* Expansion of the "libdir" installation directory. */
-#define X_LIBDIR "/usr/local/lib"
+#define X_LIBDIR "/usr/local/lib64"
 
 /* Expansion of the "libexecdir" installation directory. */
-#define X_LIBEXECDIR "/usr/local/libexec"
+#define X_LIBEXECDIR "/usr/local/lib"
 
 /* Expansion of the "localstatedir" installation directory. */
 #define X_LOCALSTATEDIR "/usr/local/var"
@@ -374,7 +374,7 @@
 #define X_SYSCONFDIR "/usr/local/etc"
 
 /* Number of bits in a file offset, on hosts where this is settable. */
-#define _FILE_OFFSET_BITS 64
+/* #undef _FILE_OFFSET_BITS */
 
 /* Define _GNU_SOURCE so that we get all necessary prototypes */
 #define _GNU_SOURCE 1

@@ -1,8 +1,8 @@
 trans.o: trans.c ../config/config.h /usr/include/stdlib.h \
  /usr/include/features.h /usr/include/sys/cdefs.h \
  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
- /usr/include/gnu/stubs-32.h \
- /usr/lib/gcc/i586-suse-linux/4.5/include/stddef.h \
+ /usr/include/gnu/stubs-64.h \
+ /usr/lib64/gcc/x86_64-suse-linux/4.6/include/stddef.h \
  /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
  /usr/include/endian.h /usr/include/bits/endian.h \
  /usr/include/bits/byteswap.h /usr/include/xlocale.h \
@@ -13,15 +13,14 @@ trans.o: trans.c ../config/config.h /usr/include/stdlib.h \
  /usr/include/sys/sysmacros.h /usr/include/bits/pthreadtypes.h \
  /usr/include/alloca.h /usr/include/stdio.h /usr/include/libio.h \
  /usr/include/_G_config.h /usr/include/wchar.h \
- /usr/lib/gcc/i586-suse-linux/4.5/include/stdarg.h \
+ /usr/lib64/gcc/x86_64-suse-linux/4.6/include/stdarg.h \
  /usr/include/bits/stdio_lim.h /usr/include/bits/sys_errlist.h \
- /usr/include/bits/stdio.h /usr/include/string.h \
- /usr/include/bits/string.h /usr/include/bits/string2.h \
- /usr/lib/gcc/i586-suse-linux/4.5/include/stdint.h /usr/include/stdint.h \
- /usr/include/bits/wchar.h /usr/include/errno.h /usr/include/bits/errno.h \
- /usr/include/linux/errno.h /usr/include/asm/errno.h \
- /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
- 9p.h npfs.h npfsimpl.h
+ /usr/include/string.h \
+ /usr/lib64/gcc/x86_64-suse-linux/4.6/include/stdint.h \
+ /usr/include/stdint.h /usr/include/bits/wchar.h /usr/include/errno.h \
+ /usr/include/bits/errno.h /usr/include/linux/errno.h \
+ /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
+ /usr/include/asm-generic/errno-base.h 9p.h npfs.h npfsimpl.h
 
 ../config/config.h:
 
@@ -35,9 +34,9 @@ trans.o: trans.c ../config/config.h /usr/include/stdlib.h \
 
 /usr/include/gnu/stubs.h:
 
-/usr/include/gnu/stubs-32.h:
+/usr/include/gnu/stubs-64.h:
 
-/usr/lib/gcc/i586-suse-linux/4.5/include/stddef.h:
+/usr/lib64/gcc/x86_64-suse-linux/4.6/include/stddef.h:
 
 /usr/include/bits/waitflags.h:
 
@@ -81,21 +80,15 @@ trans.o: trans.c ../config/config.h /usr/include/stdlib.h \
 
 /usr/include/wchar.h:
 
-/usr/lib/gcc/i586-suse-linux/4.5/include/stdarg.h:
+/usr/lib64/gcc/x86_64-suse-linux/4.6/include/stdarg.h:
 
 /usr/include/bits/stdio_lim.h:
 
 /usr/include/bits/sys_errlist.h:
 
-/usr/include/bits/stdio.h:
-
 /usr/include/string.h:
 
-/usr/include/bits/string.h:
-
-/usr/include/bits/string2.h:
-
-/usr/lib/gcc/i586-suse-linux/4.5/include/stdint.h:
+/usr/lib64/gcc/x86_64-suse-linux/4.6/include/stdint.h:
 
 /usr/include/stdint.h:
 

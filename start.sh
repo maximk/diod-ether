@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo diod/diod -f -n -d 1 -e /home/mk
+sudo diod/diod -f -d3 -n -E --nwthreads 1
